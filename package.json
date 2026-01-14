@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "dev:https": "next dev --experimental-https --webpack",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint"
@@ -14,6 +13,8 @@
     "@serwist/precaching": "^9.5.0",
     "@serwist/sw": "^9.5.0",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.26.2",
+    "jotai": "^2.16.2",
     "next": "16.1.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",

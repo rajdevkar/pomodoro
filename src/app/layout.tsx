@@ -1,7 +1,15 @@
 import clsx from "clsx";
 import type { Metadata, Viewport } from "next";
-import { Doto, Fascinate, Geist, Geist_Mono, Sixtyfour } from "next/font/google";
+import {
+  Doto,
+  Fascinate,
+  Geist,
+  Geist_Mono,
+  Orbitron,
+  Sixtyfour,
+} from "next/font/google";
 import "./globals.css";
+import JotaiProvider from "@/components/JotaiProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,6 +37,11 @@ const sixtyFour = Sixtyfour({
   subsets: ["latin"],
 });
 
+const orbitron = Orbitron({
+  variable: "--font-orbitron",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: "OrientTimer",
   description: "A minimalist Pomodoro timer with orientation controls",
@@ -51,11 +64,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={clsx(geistSans.variable, geistMono.variable, doto.variable, fascinate.variable, sixtyFour.variable, "antialiased")}
+        className={clsx(
+          geistSans.variable,
+          geistMono.variable,
+          doto.variable,
+          fascinate.variable,
+          sixtyFour.variable,
+          orbitron.variable,
+          "antialiased",
+        )}
       >
-        {children}
+        <JotaiProvider>{children}</JotaiProvider>
       </body>
-
     </html>
   );
 }
