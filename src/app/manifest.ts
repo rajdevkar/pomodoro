@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Pomodoro App",
-    short_name: "Pomodoro",
+    name: "Timo",
+    short_name: "Timo",
     description: "A simple Pomodoro timer application",
     start_url: "/",
     display: "standalone",

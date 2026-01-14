@@ -43,17 +43,22 @@ const orbitron = Orbitron({
 });
 
 export const metadata: Metadata = {
-  title: "OrientTimer",
+  title: "Timo",
   description: "A minimalist Pomodoro timer with orientation controls",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "OrientTimer",
+    title: "Timo",
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
 };
 
 export const viewport: Viewport = {
   themeColor: "#000000",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

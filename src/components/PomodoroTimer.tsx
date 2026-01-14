@@ -1,16 +1,16 @@
 "use client";
 
-import { useGestureControl } from "@/hooks/useGestureControl";
 import {
   durationMinutesAtom,
   isActiveAtom,
   stepMinutesAtom,
+  themeAtom,
   toastMessageAtom,
 } from "@/store/atoms";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWakeLock } from "react-screen-wake-lock";
-import SettingsControl from "./SettingsControl";
+import BottomControls from "./BottomControls";
 import TimerDisplay from "./TimerDisplay";
 import Toast from "./Toast";
 
@@ -24,9 +24,7 @@ export default function PomodoroTimer() {
 
   // --- Refs ---
   const lastUpdateTimeRef = useRef<number>(0);
-  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastClickTimeRef = useRef<number>(0);
-  const isInitializedRef = useRef(false);
+
 
   // --- Wake Lock ---
   const { isSupported, released, request } = useWakeLock({
@@ -36,58 +34,52 @@ export default function PomodoroTimer() {
   });
 
   // --- Initialization ---
-  // Only sync timeLeftMs with durationMinutes ONCE on mount
+  // Sync timeLeftMs with durationMinutes whenever it changes (hydration or settings update)
   useEffect(() => {
-    if (!isInitializedRef.current) {
-      if (typeof window !== "undefined") {
-        setTimeLeftMs(durationMinutes * 60 * 1000);
-        isInitializedRef.current = true;
-      }
-    }
+    setTimeLeftMs(durationMinutes * 60 * 1000);
   }, [durationMinutes]);
 
   // --- Core Timer Logic ---
-  const adjustTime = useCallback(
-    (direction: "increment" | "decrement") => {
-      // 1. Calculate new duration
-      let newDuration = durationMinutes;
+  const adjustTime = (direction: "increment" | "decrement") => {
+    let newDuration = durationMinutes;
 
-      if (direction === "increment") {
-        if (durationMinutes + stepMinutes > 60) {
-          setToastMessage("Maximum duration is 60 minutes");
-          return;
-        }
-        newDuration = Math.min(60, durationMinutes + stepMinutes);
-      } else {
-        if (durationMinutes - stepMinutes < stepMinutes) {
-          setToastMessage(`Minimum duration is ${stepMinutes} minutes`);
-          return;
-        }
-        newDuration = Math.max(stepMinutes, durationMinutes - stepMinutes);
+    if (direction === "increment") {
+      if (durationMinutes + stepMinutes > 60) {
+        setToastMessage("Maximum duration is 60 minutes");
+        return;
       }
+      newDuration = Math.min(60, durationMinutes + stepMinutes);
+    } else {
+      if (durationMinutes - stepMinutes < stepMinutes) {
+        setToastMessage(`Minimum duration is ${stepMinutes} minutes`);
+        return;
+      }
+      newDuration = Math.max(stepMinutes, durationMinutes - stepMinutes);
+    }
 
-      // 2. Update Persisted Settings
-      setDurationMinutes(newDuration);
+    setDurationMinutes(newDuration);
+    setIsActive(false);
+    setTimeLeftMs(newDuration * 60 * 1000);
+  };
 
-      // 3. Update Current Timer State (Explicitly Pause & Reset)
-      setIsActive(false);
-      setTimeLeftMs(newDuration * 60 * 1000);
-    },
-    [durationMinutes, stepMinutes, setDurationMinutes, setIsActive, setToastMessage],
-  );
-
-  const toggleTimer = useCallback(() => {
+  const toggleTimer = () => {
     if (!isActive) {
-      // STARTING
       if (isSupported && released) {
         request();
       }
       setIsActive(true);
     } else {
-      // PAUSING
       setIsActive(false);
     }
-  }, [isActive, setIsActive, isSupported, released, request]);
+  };
+
+  const resetTimer = () => {
+    setIsActive(false);
+    setTimeLeftMs(durationMinutes * 60 * 1000);
+  };
+
+  // --- Settings Logic ---
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // --- Interval Loop ---
   useEffect(() => {
@@ -100,7 +92,6 @@ export default function PomodoroTimer() {
         const now = Date.now();
         const elapsed = now - lastUpdateTimeRef.current;
 
-        // Update every ~10ms for smoothness, but logic runs at interval speed
         if (elapsed >= 10) {
           setTimeLeftMs((prev) => {
             if (prev <= 0) {
@@ -108,7 +99,7 @@ export default function PomodoroTimer() {
               return 0;
             }
             const newValue = Math.max(0, prev - elapsed);
-            lastUpdateTimeRef.current = now; // Sync time
+            lastUpdateTimeRef.current = now;
             return newValue;
           });
         }
@@ -118,49 +109,42 @@ export default function PomodoroTimer() {
     return () => clearInterval(interval);
   }, [isActive, setIsActive]);
 
-  // --- Gesture & Touch Controls ---
-  const { requestPermission, permissionGranted } = useGestureControl({
-    onTiltRight: () => adjustTime("increment"),
-    onTiltLeft: () => adjustTime("decrement"),
-  });
-
-  const handleInteraction = (e: React.MouseEvent) => {
-    const width = window.innerWidth;
-    const x = e.clientX;
-    const now = Date.now();
-    const timeSinceLastClick = now - lastClickTimeRef.current;
-    lastClickTimeRef.current = now;
-
-    if (clickTimeoutRef.current) {
-      clearTimeout(clickTimeoutRef.current);
-      clickTimeoutRef.current = null;
-    }
-
-    if (timeSinceLastClick < 300) {
-      // --- DOUBLE CLICK ---
-      if (x < width / 2) {
-        adjustTime("decrement");
-      } else {
-        adjustTime("increment");
-      }
-    } else {
-      // --- SINGLE CLICK (Wait for potential double) ---
-      clickTimeoutRef.current = setTimeout(() => {
-        if (!permissionGranted) {
-          requestPermission();
-        }
-        toggleTimer();
-      }, 300);
-    }
-  };
+  const theme = useAtomValue(themeAtom);
 
   return (
     <>
+      {/* Portfolio Link */}
+      <div
+        className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-4 pointer-events-none"
+        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+      >
+        <a
+          href="https://rajdevkar.dev"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`px-4 py-2 rounded-full backdrop-blur-sm text-xs font-medium transition-all shadow-sm hover:scale-105 active:scale-95 pointer-events-auto ${theme === "dark"
+            ? "bg-white/10 hover:bg-white/20 text-white/50 hover:text-white"
+            : "bg-black/5 hover:bg-black/10 text-black/50 hover:text-black"
+            }`}
+        >
+          rajdevkar.dev
+        </a>
+      </div>
+
       <TimerDisplay
         timeLeftMs={timeLeftMs}
-        handleInteraction={handleInteraction}
       />
-      <SettingsControl />
+
+      <BottomControls
+        isActive={isActive}
+        onToggle={toggleTimer}
+        onReset={resetTimer}
+        onIncrement={() => adjustTime("increment")}
+        onDecrement={() => adjustTime("decrement")}
+        onSettingsToggle={() => setIsSettingsOpen(!isSettingsOpen)}
+        isSettingsOpen={isSettingsOpen}
+      />
+
       <Toast />
     </>
   );
