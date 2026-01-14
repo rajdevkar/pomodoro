@@ -26,6 +26,18 @@ export const durationMinutesAtom = atomWithStorage<number>(
   25,
 );
 
-export const isActiveAtom = atom<boolean>(false);
+// Stores the timestamp (ms) when the timer is expected to end
+export const targetEndTimeAtom = atomWithStorage<number | null>(
+  "pomodoro-target-end-time",
+  null,
+);
+
+// Stores the remaining duration (ms) when the timer is paused
+export const remainingTimeAtom = atomWithStorage<number | null>(
+  "pomodoro-remaining-time",
+  null,
+);
+
+export const isActiveAtom = atomWithStorage<boolean>("pomodoro-is-active", false);
 
 export const toastMessageAtom = atom<string | null>(null);
