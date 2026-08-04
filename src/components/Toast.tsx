@@ -2,7 +2,9 @@ import { toastMessageAtom } from "@/store/atoms";
 import { themeAtom } from "@/store/atoms";
 import { useAtom, useAtomValue } from "jotai";
 import React, { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import { Animated, Platform, StyleSheet, Text, View } from "react-native";
+
+const useNativeDriver = Platform.OS !== "web";
 
 export default function Toast() {
   const [message, setMessage] = useAtom(toastMessageAtom);
@@ -17,12 +19,12 @@ export default function Toast() {
       Animated.timing(opacity, {
         toValue: 1,
         duration: 200,
-        useNativeDriver: true,
+        useNativeDriver,
       }),
       Animated.timing(translateY, {
         toValue: 0,
         duration: 200,
-        useNativeDriver: true,
+        useNativeDriver,
       }),
     ]).start();
 
@@ -31,12 +33,12 @@ export default function Toast() {
         Animated.timing(opacity, {
           toValue: 0,
           duration: 200,
-          useNativeDriver: true,
+          useNativeDriver,
         }),
         Animated.timing(translateY, {
           toValue: -20,
           duration: 200,
-          useNativeDriver: true,
+          useNativeDriver,
         }),
       ]).start(({ finished }) => {
         if (finished) setMessage(null);
@@ -51,7 +53,7 @@ export default function Toast() {
   const isDark = theme === "dark";
 
   return (
-    <View pointerEvents="none" style={styles.container}>
+    <View style={[styles.container, { pointerEvents: "none" }]}>
       <Animated.View
         style={[
           styles.toast,

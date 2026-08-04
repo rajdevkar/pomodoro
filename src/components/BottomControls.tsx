@@ -69,10 +69,9 @@ export default function BottomControls({
 
   return (
     <View
-      pointerEvents="box-none"
       style={[
         styles.container,
-        { paddingBottom: Math.max(24, insets.bottom + 8) },
+        { paddingBottom: Math.max(24, insets.bottom + 8), pointerEvents: "box-none" },
       ]}
     >
       <View style={styles.row}>

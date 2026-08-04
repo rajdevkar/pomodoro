@@ -48,7 +48,7 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
     try {
       await deactivateKeepAwake("timo-timer");
     } catch {
-      // ignore
+      // ignore if wake lock was never activated
     }
 
     await sendTimerFinishedNotification();
@@ -87,9 +87,14 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
+    let keepAwakeActive = false;
 
     if (isActive && targetEndTime) {
-      void activateKeepAwakeAsync("timo-timer");
+      void activateKeepAwakeAsync("timo-timer")
+        .then(() => {
+          keepAwakeActive = true;
+        })
+        .catch(() => undefined);
       interval = setInterval(() => {
         const diff = targetEndTime - Date.now();
         if (diff <= 0) {
@@ -98,12 +103,13 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
           setTimeLeftMs(diff);
         }
       }, 50);
-    } else {
-      void deactivateKeepAwake("timo-timer");
     }
 
     return () => {
       if (interval) clearInterval(interval);
+      if (keepAwakeActive || isActive) {
+        deactivateKeepAwake("timo-timer").catch(() => undefined);
+      }
     };
   }, [handleTimerComplete, isActive, targetEndTime]);
 
@@ -141,7 +147,7 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
       setTargetEndTime(target);
       setRemainingTime(null);
       setIsActive(true);
-      void activateKeepAwakeAsync("timo-timer");
+      activateKeepAwakeAsync("timo-timer").catch(() => undefined);
     } else {
       if (targetEndTime) {
         const remaining = Math.max(0, targetEndTime - Date.now());
@@ -149,7 +155,7 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
       }
       setTargetEndTime(null);
       setIsActive(false);
-      void deactivateKeepAwake("timo-timer");
+      deactivateKeepAwake("timo-timer").catch(() => undefined);
     }
   };
 
@@ -158,7 +164,7 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
     setTargetEndTime(null);
     setRemainingTime(null);
     setTimeLeftMs(durationMinutes * 60 * 1000);
-    void deactivateKeepAwake("timo-timer");
+    deactivateKeepAwake("timo-timer").catch(() => undefined);
   };
 
   const isDark = theme === "dark";
@@ -166,8 +172,10 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
   return (
     <View style={styles.root}>
       <View
-        pointerEvents="box-none"
-        style={[styles.portfolioRow, { paddingTop: Math.max(16, insets.top) }]}
+        style={[
+          styles.portfolioRow,
+          { paddingTop: Math.max(16, insets.top), pointerEvents: "box-none" },
+        ]}
       >
         <Pressable
           onPress={() => Linking.openURL("https://rajdevkar.dev")}
