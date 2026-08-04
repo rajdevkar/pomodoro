@@ -1,9 +1,8 @@
+import { themeAtom } from "@/store/atoms";
 import { useAtomValue } from "jotai";
 import React from "react";
-// removed duplicate themeAtom import since it is imported with others below
-import {
-  themeAtom
-} from "@/store/atoms";
+import { Pressable, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CloseIcon from "./icons/CloseIcon";
 import MinusIcon from "./icons/MinusIcon";
 import PauseIcon from "./icons/PauseIcon";
@@ -23,7 +22,7 @@ interface BottomControlsProps {
   isSettingsOpen: boolean;
 }
 
-const BottomControls: React.FC<BottomControlsProps> = ({
+export default function BottomControls({
   isActive,
   onToggle,
   onReset,
@@ -31,79 +30,145 @@ const BottomControls: React.FC<BottomControlsProps> = ({
   onDecrement,
   onSettingsToggle,
   isSettingsOpen,
-}) => {
+}: BottomControlsProps) {
   const theme = useAtomValue(themeAtom);
+  const insets = useSafeAreaInsets();
+  const isDark = theme === "dark";
+  const iconColor = isDark ? "#ffffff" : "#000000";
 
-  const buttonClass = `p-4 rounded-full backdrop-blur-sm transition-all shadow-lg hover:scale-105 active:scale-95 flex items-center justify-center ${theme === "dark"
-    ? "bg-white/10 hover:bg-white/20 text-white"
-    : "bg-black/5 hover:bg-black/10 text-black"
-    }`;
+  const buttonStyle = [
+    styles.button,
+    {
+      backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
+    },
+  ];
 
-  // Helper for invisible buttons to maintain layout spacing
   const renderButton = (
     visible: boolean,
     icon: React.ReactNode,
-    onClick: () => void,
-    label: string
-  ) => {
-    return (
-      <div className="flex-1 flex justify-center">
-        <button
-          onClick={onClick}
-          className={`${buttonClass} ${visible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
-          aria-label={label}
-          tabIndex={visible ? 0 : -1}
-        >
-          {icon}
-        </button>
-      </div>
-    );
-  };
+    onPress: () => void,
+    label: string,
+  ) => (
+    <View style={styles.slot}>
+      <Pressable
+        onPress={onPress}
+        accessibilityLabel={label}
+        disabled={!visible}
+        style={({ pressed }) => [
+          ...buttonStyle,
+          {
+            opacity: visible ? (pressed ? 0.75 : 1) : 0,
+            transform: [{ scale: pressed && visible ? 0.95 : 1 }],
+          },
+        ]}
+      >
+        {icon}
+      </Pressable>
+    </View>
+  );
 
   return (
-    <div
-      className="fixed bottom-8 left-0 right-0 z-50 flex justify-center items-center px-6 pointer-events-none"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    <View
+      pointerEvents="box-none"
+      style={[
+        styles.container,
+        { paddingBottom: Math.max(24, insets.bottom + 8) },
+      ]}
     >
-      <div className="flex items-center gap-4 w-full max-w-lg pointer-events-auto">
-        {/* 1. Reset (Visible only when stopped) */}
-        {renderButton(!isActive, <ResetIcon />, onReset, "Reset Timer")}
+      <View style={styles.row}>
+        {renderButton(!isActive, <ResetIcon color={iconColor} />, onReset, "Reset Timer")}
+        {renderButton(
+          !isActive,
+          <MinusIcon color={iconColor} />,
+          onDecrement,
+          "Decrease Time",
+        )}
 
-        {/* 2. Decrement (Visible only when stopped) */}
-        {renderButton(!isActive, <MinusIcon />, onDecrement, "Decrease Time")}
-
-        {/* 3. Start/Stop (Always visible) */}
-        <div className="flex-1 flex justify-center">
-          <button
-            onClick={onToggle}
-            className={`${buttonClass} scale-110`} // Slightly larger
-            aria-label={isActive ? "Pause Timer" : "Start Timer"}
+        <View style={styles.slot}>
+          <Pressable
+            onPress={onToggle}
+            accessibilityLabel={isActive ? "Pause Timer" : "Start Timer"}
+            style={({ pressed }) => [
+              ...buttonStyle,
+              styles.primaryButton,
+              {
+                opacity: pressed ? 0.75 : 1,
+                transform: [{ scale: pressed ? 0.95 : 1.08 }],
+              },
+            ]}
           >
-            {isActive ? <PauseIcon /> : <PlayIcon />}
-          </button>
-        </div>
+            {isActive ? (
+              <PauseIcon color={iconColor} />
+            ) : (
+              <PlayIcon color={iconColor} />
+            )}
+          </Pressable>
+        </View>
 
-        {/* 4. Increment (Visible only when stopped) */}
-        {renderButton(!isActive, <PlusIcon />, onIncrement, "Increase Time")}
+        {renderButton(
+          !isActive,
+          <PlusIcon color={iconColor} />,
+          onIncrement,
+          "Increase Time",
+        )}
 
-        {/* 5. Settings (Always visible) */}
-        <div className="flex-1 flex justify-center relative">
-          <button
-            onClick={onSettingsToggle}
-            className={buttonClass}
-            aria-label="Settings"
+        <View style={styles.slot}>
+          <Pressable
+            onPress={onSettingsToggle}
+            accessibilityLabel="Settings"
+            style={({ pressed }) => [
+              ...buttonStyle,
+              {
+                opacity: pressed ? 0.75 : 1,
+                transform: [{ scale: pressed ? 0.95 : 1 }],
+              },
+            ]}
           >
-            {isSettingsOpen ? <CloseIcon /> : <SettingsIcon />}
-          </button>
+            {isSettingsOpen ? (
+              <CloseIcon color={iconColor} />
+            ) : (
+              <SettingsIcon color={iconColor} />
+            )}
+          </Pressable>
+        </View>
+      </View>
 
-          <SettingsControl
-            isOpen={isSettingsOpen}
-            onClose={onSettingsToggle}
-          />
-        </div>
-      </div>
-    </div>
+      <SettingsControl isOpen={isSettingsOpen} onClose={onSettingsToggle} />
+    </View>
   );
-};
+}
 
-export default BottomControls;
+const styles = StyleSheet.create({
+  container: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 50,
+    paddingHorizontal: 16,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    maxWidth: 480,
+    alignSelf: "center",
+    width: "100%",
+  },
+  slot: {
+    flex: 1,
+    alignItems: "center",
+  },
+  button: {
+    width: 56,
+    height: 56,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryButton: {
+    width: 60,
+    height: 60,
+  },
+});

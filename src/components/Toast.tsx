@@ -1,36 +1,103 @@
-"use client";
-
-import { useAtom } from "jotai";
 import { toastMessageAtom } from "@/store/atoms";
-import { useEffect } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { themeAtom } from "@/store/atoms";
+import { useAtom, useAtomValue } from "jotai";
+import React, { useEffect, useRef } from "react";
+import { Animated, StyleSheet, Text, View } from "react-native";
 
 export default function Toast() {
   const [message, setMessage] = useAtom(toastMessageAtom);
+  const theme = useAtomValue(themeAtom);
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(-20)).current;
 
   useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => {
-        setMessage(null);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [message, setMessage]);
+    if (!message) return;
+
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    const timer = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: -20,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(({ finished }) => {
+        if (finished) setMessage(null);
+      });
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [message, opacity, setMessage, translateY]);
+
+  if (!message) return null;
+
+  const isDark = theme === "dark";
 
   return (
-    <div className="fixed top-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-      <AnimatePresence>
-        {message && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.9 }}
-            className="bg-black/80 dark:bg-white/90 text-white dark:text-black px-6 py-3 rounded-full shadow-xl backdrop-blur-md text-sm font-medium border border-white/10 dark:border-black/5"
-          >
-            {message}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+    <View pointerEvents="none" style={styles.container}>
+      <Animated.View
+        style={[
+          styles.toast,
+          {
+            opacity,
+            transform: [{ translateY }],
+            backgroundColor: isDark
+              ? "rgba(255,255,255,0.9)"
+              : "rgba(0,0,0,0.8)",
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.text,
+            { color: isDark ? "#000000" : "#ffffff" },
+          ]}
+        >
+          {message}
+        </Text>
+      </Animated.View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    position: "absolute",
+    top: 56,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    alignItems: "center",
+  },
+  toast: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  text: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+});

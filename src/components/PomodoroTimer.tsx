@@ -1,5 +1,6 @@
-"use client";
-
+import BottomControls from "@/components/BottomControls";
+import TimerDisplay from "@/components/TimerDisplay";
+import Toast from "@/components/Toast";
 import {
   durationMinutesAtom,
   isActiveAtom,
@@ -10,101 +11,102 @@ import {
   toastMessageAtom,
 } from "@/store/atoms";
 import { playNotificationSound } from "@/utils/audioUtils";
-import { formatTime } from "@/utils/timeUtils";
+import { requestNotificationPermissions, sendTimerFinishedNotification } from "@/utils/notifications";
+import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { useEffect, useRef, useState } from "react";
-import { useWakeLock } from "react-screen-wake-lock";
-import BottomControls from "./BottomControls";
-import TimerDisplay from "./TimerDisplay";
-import Toast from "./Toast";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-export default function PomodoroTimer() {
-  // --- State & Settings ---
+interface PomodoroTimerProps {
+  fontFamilies: string[];
+}
+
+export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
   const stepMinutes = useAtomValue(stepMinutesAtom);
   const [durationMinutes, setDurationMinutes] = useAtom(durationMinutesAtom);
   const [isActive, setIsActive] = useAtom(isActiveAtom);
   const [targetEndTime, setTargetEndTime] = useAtom(targetEndTimeAtom);
   const [remainingTime, setRemainingTime] = useAtom(remainingTimeAtom);
-
-  // Local state for smooth display updates (synced with persisted state)
-  const [timeLeftMs, setTimeLeftMs] = useState(durationMinutes * 60 * 1000);
+  const theme = useAtomValue(themeAtom);
   const setToastMessage = useSetAtom(toastMessageAtom);
 
-  // --- Refs ---
-  const lastUpdateTimeRef = useRef<number>(0);
+  const [timeLeftMs, setTimeLeftMs] = useState(durationMinutes * 60 * 1000);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const insets = useSafeAreaInsets();
+  const completingRef = useRef(false);
 
-  // --- Wake Lock ---
-  const { isSupported, released, request } = useWakeLock({
-    onRequest: () => console.log("Screen Wake Lock: Requested!"),
-    onError: () => console.log("Screen Wake Lock: Error!"),
-    onRelease: () => console.log("Screen Wake Lock: Released!"),
-  });
+  const handleTimerComplete = useCallback(async () => {
+    if (completingRef.current) return;
+    completingRef.current = true;
 
-  // Re-request wake lock if released while active (e.g. switching tabs)
-  useEffect(() => {
-    if (isActive && isSupported && released) {
-      request();
+    setIsActive(false);
+    setTargetEndTime(null);
+    setRemainingTime(null);
+    setTimeLeftMs(durationMinutes * 60 * 1000);
+
+    try {
+      await deactivateKeepAwake("timo-timer");
+    } catch {
+      // ignore
     }
-  }, [isActive, isSupported, released, request]);
 
-  // --- Initialization & Sync ---
+    await sendTimerFinishedNotification();
+    await playNotificationSound();
+
+    completingRef.current = false;
+  }, [
+    durationMinutes,
+    setIsActive,
+    setRemainingTime,
+    setTargetEndTime,
+  ]);
+
   useEffect(() => {
-    // If active, calculate remaining time based on target
     if (isActive && targetEndTime) {
       const remaining = Math.max(0, targetEndTime - Date.now());
       setTimeLeftMs(remaining);
       if (remaining <= 0) {
-        handleTimerComplete();
+        void handleTimerComplete();
       }
     } else if (remainingTime !== null) {
-      // If paused with stored remaining time
       setTimeLeftMs(remainingTime);
     } else {
-      // creating a new timer or reset state
       setTimeLeftMs(durationMinutes * 60 * 1000);
     }
 
-    // Request notification permission on mount
-    if (typeof Notification !== "undefined" && Notification.permission !== "granted") {
-      Notification.requestPermission();
-    }
+    void requestNotificationPermissions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync timeLeftMs when duration changes (only if not active/paused in middle)
   useEffect(() => {
     if (!isActive && remainingTime === null) {
       setTimeLeftMs(durationMinutes * 60 * 1000);
     }
   }, [durationMinutes, isActive, remainingTime]);
 
-  // Update title
   useEffect(() => {
-    document.title = `${formatTime(timeLeftMs)} - Timo`;
-  }, [timeLeftMs]);
+    let interval: ReturnType<typeof setInterval> | undefined;
 
-  const handleTimerComplete = () => {
-    setIsActive(false);
-    setTargetEndTime(null);
-    setRemainingTime(null);
-    setTimeLeftMs(durationMinutes * 60 * 1000);
-
-    // Show notification
-    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-      try {
-        new Notification("Timo", {
-          body: "Timer finished!",
-          icon: "/logo.png"
-        });
-      } catch (e) {
-        console.error("Notification error", e);
-      }
+    if (isActive && targetEndTime) {
+      void activateKeepAwakeAsync("timo-timer");
+      interval = setInterval(() => {
+        const diff = targetEndTime - Date.now();
+        if (diff <= 0) {
+          void handleTimerComplete();
+        } else {
+          setTimeLeftMs(diff);
+        }
+      }, 50);
+    } else {
+      void deactivateKeepAwake("timo-timer");
     }
 
-    // Play melody
-    playNotificationSound();
-  };
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [handleTimerComplete, isActive, targetEndTime]);
 
-  // --- Core Timer Logic ---
   const adjustTime = (direction: "increment" | "decrement") => {
     if (isActive) return;
 
@@ -125,7 +127,6 @@ export default function PomodoroTimer() {
     }
 
     setDurationMinutes(newDuration);
-    // Reset any paused state when adjusting time
     setRemainingTime(null);
     setTargetEndTime(null);
     setTimeLeftMs(newDuration * 60 * 1000);
@@ -133,25 +134,22 @@ export default function PomodoroTimer() {
 
   const toggleTimer = () => {
     if (!isActive) {
-      // Start
-      if (isSupported && released) {
-        request();
-      }
-
-      const duration = remainingTime !== null ? remainingTime : durationMinutes * 60 * 1000;
+      const duration =
+        remainingTime !== null ? remainingTime : durationMinutes * 60 * 1000;
       const target = Date.now() + duration;
 
       setTargetEndTime(target);
-      setRemainingTime(null); // Clear paused state
+      setRemainingTime(null);
       setIsActive(true);
+      void activateKeepAwakeAsync("timo-timer");
     } else {
-      // Pause
       if (targetEndTime) {
         const remaining = Math.max(0, targetEndTime - Date.now());
         setRemainingTime(remaining);
       }
       setTargetEndTime(null);
       setIsActive(false);
+      void deactivateKeepAwake("timo-timer");
     }
   };
 
@@ -160,56 +158,41 @@ export default function PomodoroTimer() {
     setTargetEndTime(null);
     setRemainingTime(null);
     setTimeLeftMs(durationMinutes * 60 * 1000);
+    void deactivateKeepAwake("timo-timer");
   };
 
-  // --- Settings Logic ---
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
-  // --- Interval Loop ---
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-
-    if (isActive && targetEndTime) {
-      interval = setInterval(() => {
-        const now = Date.now();
-        const diff = targetEndTime - now;
-
-        if (diff <= 0) {
-          handleTimerComplete();
-        } else {
-          setTimeLeftMs(diff);
-        }
-      }, 50);
-    }
-
-    return () => clearInterval(interval);
-  }, [isActive, targetEndTime, durationMinutes]);
-
-  const theme = useAtomValue(themeAtom);
+  const isDark = theme === "dark";
 
   return (
-    <>
-      {/* Portfolio Link */}
-      <div
-        className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-4 pointer-events-none"
-        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+    <View style={styles.root}>
+      <View
+        pointerEvents="box-none"
+        style={[styles.portfolioRow, { paddingTop: Math.max(16, insets.top) }]}
       >
-        <a
-          href="https://rajdevkar.dev"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`px-4 py-2 rounded-full backdrop-blur-sm text-xs font-medium transition-all shadow-sm hover:scale-105 active:scale-95 pointer-events-auto ${theme === "dark"
-            ? "bg-white/10 hover:bg-white/20 text-white/50 hover:text-white"
-            : "bg-black/5 hover:bg-black/10 text-black/50 hover:text-black"
-            }`}
+        <Pressable
+          onPress={() => Linking.openURL("https://rajdevkar.dev")}
+          style={({ pressed }) => [
+            styles.portfolioLink,
+            {
+              backgroundColor: isDark
+                ? "rgba(255,255,255,0.1)"
+                : "rgba(0,0,0,0.05)",
+              opacity: pressed ? 0.8 : 1,
+            },
+          ]}
         >
-          rajdevkar.dev
-        </a>
-      </div>
+          <Text
+            style={[
+              styles.portfolioText,
+              { color: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" },
+            ]}
+          >
+            rajdevkar.dev
+          </Text>
+        </Pressable>
+      </View>
 
-      <TimerDisplay
-        timeLeftMs={timeLeftMs}
-      />
+      <TimerDisplay timeLeftMs={timeLeftMs} fontFamilies={fontFamilies} />
 
       <BottomControls
         isActive={isActive}
@@ -217,11 +200,34 @@ export default function PomodoroTimer() {
         onReset={resetTimer}
         onIncrement={() => adjustTime("increment")}
         onDecrement={() => adjustTime("decrement")}
-        onSettingsToggle={() => setIsSettingsOpen(!isSettingsOpen)}
+        onSettingsToggle={() => setIsSettingsOpen((open) => !open)}
         isSettingsOpen={isSettingsOpen}
       />
 
       <Toast />
-    </>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  portfolioRow: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    alignItems: "center",
+  },
+  portfolioLink: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  portfolioText: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+});

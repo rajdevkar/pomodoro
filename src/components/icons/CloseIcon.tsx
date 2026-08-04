@@ -1,21 +1,26 @@
 import React from "react";
+import Svg, { Path } from "react-native-svg";
 
-export default function CloseIcon({ className }: { className?: string }) {
+export default function CloseIcon({
+  color = "currentColor",
+  size = 24,
+}: {
+  color?: string;
+  size?: number;
+}) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
+    <Svg
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
+      stroke={color}
+      strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={className}
     >
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
-    </svg>
+      <Path d="M18 6 6 18" />
+      <Path d="m6 6 12 12" />
+    </Svg>
   );
 }

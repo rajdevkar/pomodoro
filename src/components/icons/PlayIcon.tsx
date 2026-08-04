@@ -1,20 +1,16 @@
 import React from "react";
+import Svg, { Polygon } from "react-native-svg";
 
-export default function PlayIcon({ className }: { className?: string }) {
+export default function PlayIcon({
+  color = "currentColor",
+  size = 24,
+}: {
+  color?: string;
+  size?: number;
+}) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <polygon points="5 3 19 12 5 21 5 3" />
-    </svg>
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+      <Polygon points="5 3 19 12 5 21 5 3" />
+    </Svg>
   );
 }
