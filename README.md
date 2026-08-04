@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Timo (Expo)
+
+A minimalist Pomodoro timer, migrated from Next.js to Expo (React Native).
+
+## Features
+
+- Countdown timer with start / pause / reset
+- Adjustable duration (1–60 minutes) and step amounts
+- Theme (light / dark), font family, and font size settings
+- Persisted timer + settings via AsyncStorage
+- Screen keep-awake while the timer runs
+- Local notification + melody when the timer finishes
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then press:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `a` for Android emulator / device
+- `i` for iOS simulator (macOS)
+- `w` for web
+- or scan the QR code with Expo Go
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+| Command | Description |
+| --- | --- |
+| `npm start` | Start the Expo dev server |
+| `npm run android` | Open on Android |
+| `npm run ios` | Open on iOS |
+| `npm run web` | Open in browser |
+| `npm run typecheck` | TypeScript check |
 
-To learn more about Next.js, take a look at the following resources:
+## Architecture notes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Expo Router** replaces the Next.js App Router (`app/`)
+- **Jotai + AsyncStorage** replaces `localStorage` persistence
+- **StyleSheet** replaces Tailwind CSS
+- **expo-notifications** replaces the Web Notification API
+- **expo-av** plays a generated WAV melody (same notes as the web app)
+- **expo-keep-awake** replaces the Screen Wake Lock API
+- PWA / Serwist service worker was removed (native apps do not need it)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Font mapping
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Web (next/font) | Expo |
+| --- | --- |
+| Geist | Space Grotesk |
+| Doto | Outfit |
+| Fascinate | Fascinate |
+| Sixtyfour | Sixtyfour |
+| Orbitron | Orbitron |

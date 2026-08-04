@@ -1,41 +1,71 @@
-"use client";
-
+import { fontNames } from "@/constants/timerConstants";
+import {
+  fontIndexAtom,
+  fontSizePercentAtom,
+  themeAtom,
+} from "@/store/atoms";
+import { formatTime } from "@/utils/timeUtils";
 import { useAtomValue } from "jotai";
-import { themeAtom, fontIndexAtom, fontSizePercentAtom } from "@/store/atoms";
-import React, { useEffect } from "react";
+import React from "react";
+import { Dimensions, StyleSheet, Text, View } from "react-native";
 
 interface TimerDisplayProps {
   timeLeftMs: number;
+  fontFamilies: string[];
 }
-
-import { fonts } from "@/constants/timerConstants";
-import { formatTime } from "@/utils/timeUtils";
 
 export default function TimerDisplay({
   timeLeftMs,
+  fontFamilies,
 }: TimerDisplayProps) {
   const theme = useAtomValue(themeAtom);
   const fontIndex = useAtomValue(fontIndexAtom);
   const fontSizePercent = useAtomValue(fontSizePercentAtom);
 
-  useEffect(() => {
-    document.documentElement.classList.remove("light", "dark");
-    document.documentElement.classList.add(theme);
-  }, [theme]);
+  const { height, width } = Dimensions.get("window");
+  const fontSize = Math.min(
+    Math.max((fontSizePercent / 100) * height * 0.22, 36),
+    width * 0.28,
+  );
+
+  const isDark = theme === "dark";
+  const family = fontFamilies[fontIndex] ?? fontFamilies[0];
 
   return (
-    <div
-      className={`fixed inset-0 w-full h-full flex flex-col items-center justify-center select-none overflow-hidden transition-colors duration-300 ${theme === "dark" ? "bg-black text-white" : "bg-white text-black"}`}
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: isDark ? "#000000" : "#ffffff" },
+      ]}
     >
-      <div
-        className="font-bold leading-none tracking-tighter tabular-nums transition-all duration-300 ease-in-out"
-        style={{
-          fontSize: `clamp(${(fontSizePercent / 2) * 0.6}vh, ${fontSizePercent / 2}vw, ${(fontSizePercent / 2) * 1.6}vh)`,
-          fontFamily: fonts[fontIndex],
-        }}
+      <Text
+        style={[
+          styles.timer,
+          {
+            color: isDark ? "#ffffff" : "#000000",
+            fontSize,
+            fontFamily: family,
+            // Fascinate / display fonts look better slightly lighter weight
+            fontWeight: fontNames[fontIndex] === "Fascinate" ? "400" : "700",
+          },
+        ]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
       >
         {formatTime(timeLeftMs)}
-      </div>
-    </div>
+      </Text>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    ...StyleSheet.absoluteFill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  timer: {
+    letterSpacing: -2,
+    fontVariant: ["tabular-nums"],
+  },
+});

@@ -1,20 +1,25 @@
 import React from "react";
+import Svg, { Line } from "react-native-svg";
 
-const MinusIcon = () => {
+export default function MinusIcon({
+  color = "currentColor",
+  size = 24,
+}: {
+  color?: string;
+  size?: number;
+}) {
   return (
-    <svg
-      width="24"
-      height="24"
+    <Svg
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
+      stroke={color}
+      strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
+      <Line x1="5" y1="12" x2="19" y2="12" />
+    </Svg>
   );
-};
-
-export default MinusIcon;
+}
