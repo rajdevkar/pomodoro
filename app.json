@@ -8,6 +8,7 @@
     "scheme": "timo",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "owner": "rajdevkar",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
