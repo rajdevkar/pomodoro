@@ -1,3 +1,4 @@
+import "react-native-gesture-handler";
 import JotaiProvider from "@/components/JotaiProvider";
 import { Fascinate_400Regular } from "@expo-google-fonts/fascinate";
 import {

@@ -1,4 +1,3 @@
-import { Audio } from "expo-av";
 import * as FileSystem from "expo-file-system/legacy";
 import { Platform } from "react-native";
 
@@ -125,7 +124,8 @@ function playWebAudioMelody() {
 }
 
 let soundUri: string | null = null;
-let soundObject: Audio.Sound | null = null;
+type NativeSound = import("expo-av").Audio.Sound;
+let soundObject: NativeSound | null = null;
 
 async function ensureSoundFile(): Promise<string | null> {
   if (soundUri) return soundUri;
@@ -148,6 +148,8 @@ export async function playNotificationSound() {
       playWebAudioMelody();
       return;
     }
+
+    const { Audio } = await import("expo-av");
 
     await Audio.setAudioModeAsync({
       playsInSilentModeIOS: true,
