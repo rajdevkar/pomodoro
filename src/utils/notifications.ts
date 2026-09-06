@@ -1,18 +1,52 @@
-import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+type NotificationsModule = typeof import("expo-notifications");
+
+let notificationsModule: NotificationsModule | null | undefined;
+let handlerConfigured = false;
+
+function isNotificationsSupported(): boolean {
+  return Platform.OS !== "web" && Constants.appOwnership !== "expo";
+}
+
+async function getNotifications(): Promise<NotificationsModule | null> {
+  if (!isNotificationsSupported()) {
+    return null;
+  }
+
+  if (notificationsModule !== undefined) {
+    return notificationsModule;
+  }
+
+  try {
+    const Notifications = await import("expo-notifications");
+
+    if (!handlerConfigured) {
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+          shouldShowBanner: true,
+          shouldShowList: true,
+        }),
+      });
+      handlerConfigured = true;
+    }
+
+    notificationsModule = Notifications;
+    return Notifications;
+  } catch (error) {
+    console.warn("Notifications unavailable", error);
+    notificationsModule = null;
+    return null;
+  }
+}
 
 export async function requestNotificationPermissions(): Promise<boolean> {
-  if (Platform.OS === "web") {
+  const Notifications = await getNotifications();
+  if (!Notifications) {
     return false;
   }
 
@@ -40,6 +74,9 @@ export async function requestNotificationPermissions(): Promise<boolean> {
 
 export async function sendTimerFinishedNotification() {
   try {
+    const Notifications = await getNotifications();
+    if (!Notifications) return;
+
     const granted = await requestNotificationPermissions();
     if (!granted) return;
 
