@@ -8,10 +8,7 @@ interface GestureSurfaceProps {
   enabled?: boolean;
   onTap: () => void;
   onLongPress: () => void;
-  onSwipeHorizontal?: () => void;
 }
-
-const SWIPE_THRESHOLD = 48;
 
 export default function GestureSurface({
   children,
@@ -19,7 +16,6 @@ export default function GestureSurface({
   enabled = true,
   onTap,
   onLongPress,
-  onSwipeHorizontal,
 }: GestureSurfaceProps) {
   const gesture = useMemo(() => {
     const longPress = Gesture.LongPress()
@@ -29,17 +25,6 @@ export default function GestureSurface({
         onLongPress();
       });
 
-    const pan = Gesture.Pan()
-      .enabled(Boolean(onSwipeHorizontal))
-      .runOnJS(true)
-      .activeOffsetX([-36, 36])
-      .failOffsetY([-20, 20])
-      .onEnd((event) => {
-        if (Math.abs(event.translationX) >= SWIPE_THRESHOLD) {
-          onSwipeHorizontal?.();
-        }
-      });
-
     const tap = Gesture.Tap()
       .runOnJS(true)
       .maxDuration(250)
@@ -47,8 +32,8 @@ export default function GestureSurface({
         if (success) onTap();
       });
 
-    return Gesture.Exclusive(longPress, pan, tap);
-  }, [onLongPress, onSwipeHorizontal, onTap]);
+    return Gesture.Exclusive(longPress, tap);
+  }, [onLongPress, onTap]);
 
   if (!enabled) {
     return <View style={[styles.fill, style]}>{children}</View>;

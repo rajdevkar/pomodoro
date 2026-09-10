@@ -226,7 +226,6 @@ export default function PomodoroTimer() {
         enabled={!isSettingsOpen}
         onTap={toggleTimer}
         onLongPress={resetTimer}
-        onSwipeHorizontal={toggleSettings}
       >
         <TimerDisplay
           timeLeftMs={timeLeftMs}
