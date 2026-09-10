@@ -111,6 +111,7 @@ export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps)
     options: readonly { id: T; label: string }[],
     selectedId: T,
     onSelect: (id: T) => void,
+    columns: 2 | "auto" = "auto",
   ) => (
     <View
       style={[
@@ -130,6 +131,7 @@ export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps)
             onPress={() => onSelect(option.id)}
             style={[
               styles.segmentItem,
+              columns === 2 ? styles.segmentItemTwoCol : styles.segmentItemAuto,
               selected && {
                 backgroundColor: isDark ? "#3f3f46" : "#ffffff",
               },
@@ -230,11 +232,15 @@ export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps)
                 <Text style={[styles.rowLabel, { color: labelColor }]}>
                   End sound
                 </Text>
-                {renderSegment(endSoundOptions, endSound, (id) =>
-                  withHaptic(() => {
-                    setEndSound(id);
-                    if (id !== "off") void playEndSound(id as EndSoundId);
-                  }),
+                {renderSegment(
+                  endSoundOptions,
+                  endSound,
+                  (id) =>
+                    withHaptic(() => {
+                      setEndSound(id);
+                      if (id !== "off") void playEndSound(id as EndSoundId);
+                    }),
+                  2,
                 )}
               </View>
             </Group>
@@ -472,14 +478,22 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   segmentItem: {
-    flexGrow: 1,
-    flexBasis: "31%",
-    minWidth: 72,
-    paddingVertical: 7,
+    paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+  },
+  segmentItemAuto: {
+    flexGrow: 1,
+    flexBasis: "22%",
+    minWidth: 64,
+  },
+  segmentItemTwoCol: {
+    flexGrow: 1,
+    flexShrink: 0,
+    flexBasis: "47%",
+    maxWidth: "49%",
   },
   segmentText: {
     fontSize: 13,
