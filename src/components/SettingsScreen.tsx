@@ -136,6 +136,7 @@ export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps)
             ]}
           >
             <Text
+              numberOfLines={1}
               style={[
                 styles.segmentText,
                 {
@@ -472,15 +473,17 @@ const styles = StyleSheet.create({
   },
   segmentItem: {
     flexGrow: 1,
-    flexBasis: "18%",
-    minWidth: 56,
+    flexBasis: "31%",
+    minWidth: 72,
     paddingVertical: 7,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     borderRadius: 8,
     alignItems: "center",
+    justifyContent: "center",
   },
   segmentText: {
     fontSize: 13,
+    textAlign: "center",
   },
   fontGrid: {
     flexDirection: "row",
