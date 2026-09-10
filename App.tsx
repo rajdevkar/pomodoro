@@ -1,9 +1,11 @@
+import "react-native-gesture-handler";
 import PomodoroTimer from "@/components/PomodoroTimer";
 import { themeAtom } from "@/store/atoms";
 import { StatusBar } from "expo-status-bar";
 import { Provider, useAtomValue } from "jotai";
 import React from "react";
 import { StyleSheet, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 function ThemedApp() {
@@ -25,11 +27,13 @@ function ThemedApp() {
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <Provider>
-        <ThemedApp />
-      </Provider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <SafeAreaProvider>
+        <Provider>
+          <ThemedApp />
+        </Provider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

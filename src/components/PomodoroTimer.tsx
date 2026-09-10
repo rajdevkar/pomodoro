@@ -1,4 +1,5 @@
 import BottomControls from "@/components/BottomControls";
+import GestureSurface from "@/components/GestureSurface";
 import TimerDisplay from "@/components/TimerDisplay";
 import Toast from "@/components/Toast";
 import {
@@ -13,8 +14,15 @@ import {
   toastMessageAtom,
 } from "@/store/atoms";
 import { playEndSound, playTickSound } from "@/utils/audioUtils";
-import { triggerSuccessHaptic } from "@/utils/haptics";
-import { requestNotificationPermissions, sendTimerFinishedNotification } from "@/utils/notifications";
+import {
+  triggerLightHaptic,
+  triggerMediumHaptic,
+  triggerSuccessHaptic,
+} from "@/utils/haptics";
+import {
+  requestNotificationPermissions,
+  sendTimerFinishedNotification,
+} from "@/utils/notifications";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -35,6 +43,18 @@ export default function PomodoroTimer() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const completingRef = useRef(false);
   const lastTickSecondRef = useRef<number | null>(null);
+
+  const haptic = useCallback(
+    (intensity: "light" | "medium" = "light") => {
+      if (!hapticsEnabled) return;
+      if (intensity === "medium") {
+        void triggerMediumHaptic();
+      } else {
+        void triggerLightHaptic();
+      }
+    },
+    [hapticsEnabled],
+  );
 
   const handleTimerComplete = useCallback(async () => {
     if (completingRef.current) return;
@@ -132,32 +152,50 @@ export default function PomodoroTimer() {
     };
   }, [handleTimerComplete, isActive, targetEndTime, tickingSound]);
 
-  const adjustTime = (direction: "increment" | "decrement") => {
-    if (isActive) return;
-
-    let newDuration = durationMinutes;
-
-    if (direction === "increment") {
-      if (durationMinutes + stepMinutes > 60) {
-        setToastMessage("Maximum duration is 60 minutes");
+  const adjustTime = useCallback(
+    (direction: "increment" | "decrement") => {
+      if (isActive) {
+        setToastMessage("Pause the timer to adjust duration");
         return;
       }
-      newDuration = Math.min(60, durationMinutes + stepMinutes);
-    } else {
-      if (durationMinutes - stepMinutes < stepMinutes) {
-        setToastMessage(`Minimum duration is ${stepMinutes} minutes`);
-        return;
+
+      let newDuration = durationMinutes;
+
+      if (direction === "increment") {
+        if (durationMinutes + stepMinutes > 60) {
+          setToastMessage("Maximum duration is 60 minutes");
+          return;
+        }
+        newDuration = Math.min(60, durationMinutes + stepMinutes);
+      } else {
+        if (durationMinutes - stepMinutes < stepMinutes) {
+          setToastMessage(`Minimum duration is ${stepMinutes} minutes`);
+          return;
+        }
+        newDuration = Math.max(stepMinutes, durationMinutes - stepMinutes);
       }
-      newDuration = Math.max(stepMinutes, durationMinutes - stepMinutes);
-    }
 
-    setDurationMinutes(newDuration);
-    setRemainingTime(null);
-    setTargetEndTime(null);
-    setTimeLeftMs(newDuration * 60 * 1000);
-  };
+      haptic("light");
+      setDurationMinutes(newDuration);
+      setRemainingTime(null);
+      setTargetEndTime(null);
+      setTimeLeftMs(newDuration * 60 * 1000);
+    },
+    [
+      durationMinutes,
+      haptic,
+      isActive,
+      setDurationMinutes,
+      setRemainingTime,
+      setTargetEndTime,
+      setToastMessage,
+      stepMinutes,
+    ],
+  );
 
-  const toggleTimer = () => {
+  const toggleTimer = useCallback(() => {
+    haptic("medium");
+
     if (!isActive) {
       const duration =
         remainingTime !== null ? remainingTime : durationMinutes * 60 * 1000;
@@ -178,29 +216,57 @@ export default function PomodoroTimer() {
       lastTickSecondRef.current = null;
       deactivateKeepAwake("timo-timer").catch(() => undefined);
     }
-  };
+  }, [
+    durationMinutes,
+    haptic,
+    isActive,
+    remainingTime,
+    setIsActive,
+    setRemainingTime,
+    setTargetEndTime,
+    targetEndTime,
+  ]);
 
-  const resetTimer = () => {
+  const resetTimer = useCallback(() => {
+    haptic("light");
     setIsActive(false);
     setTargetEndTime(null);
     setRemainingTime(null);
     setTimeLeftMs(durationMinutes * 60 * 1000);
     lastTickSecondRef.current = null;
     deactivateKeepAwake("timo-timer").catch(() => undefined);
-  };
+    setToastMessage("Timer reset");
+  }, [
+    durationMinutes,
+    haptic,
+    setIsActive,
+    setRemainingTime,
+    setTargetEndTime,
+    setToastMessage,
+  ]);
+
+  const toggleSettings = useCallback(() => {
+    haptic("light");
+    setIsSettingsOpen((open) => !open);
+  }, [haptic]);
 
   return (
     <View style={styles.root}>
-      <TimerDisplay timeLeftMs={timeLeftMs} />
+      <GestureSurface
+        enabled={!isSettingsOpen}
+        onTap={toggleTimer}
+        onLongPress={resetTimer}
+        onSwipeUp={() => adjustTime("increment")}
+        onSwipeDown={() => adjustTime("decrement")}
+        onSwipeHorizontal={toggleSettings}
+      >
+        <TimerDisplay timeLeftMs={timeLeftMs} />
+      </GestureSurface>
 
       <BottomControls
-        isActive={isActive}
-        onToggle={toggleTimer}
-        onReset={resetTimer}
-        onIncrement={() => adjustTime("increment")}
-        onDecrement={() => adjustTime("decrement")}
-        onSettingsToggle={() => setIsSettingsOpen((open) => !open)}
+        onSettingsToggle={toggleSettings}
         isSettingsOpen={isSettingsOpen}
+        showGestureHint={!isActive}
       />
 
       <Toast />

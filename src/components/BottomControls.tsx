@@ -1,36 +1,23 @@
 import { hapticsEnabledAtom, themeAtom } from "@/store/atoms";
-import { triggerLightHaptic, triggerMediumHaptic } from "@/utils/haptics";
+import { triggerLightHaptic } from "@/utils/haptics";
 import { useAtomValue } from "jotai";
 import React from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CloseIcon from "./icons/CloseIcon";
-import MinusIcon from "./icons/MinusIcon";
-import PauseIcon from "./icons/PauseIcon";
-import PlayIcon from "./icons/PlayIcon";
-import PlusIcon from "./icons/PlusIcon";
-import ResetIcon from "./icons/ResetIcon";
 import SettingsIcon from "./icons/SettingsIcon";
 import SettingsControl from "./SettingsControl";
 
 interface BottomControlsProps {
-  isActive: boolean;
-  onToggle: () => void;
-  onReset: () => void;
-  onIncrement: () => void;
-  onDecrement: () => void;
   onSettingsToggle: () => void;
   isSettingsOpen: boolean;
+  showGestureHint?: boolean;
 }
 
 export default function BottomControls({
-  isActive,
-  onToggle,
-  onReset,
-  onIncrement,
-  onDecrement,
   onSettingsToggle,
   isSettingsOpen,
+  showGestureHint = true,
 }: BottomControlsProps) {
   const theme = useAtomValue(themeAtom);
   const hapticsEnabled = useAtomValue(hapticsEnabledAtom);
@@ -38,115 +25,52 @@ export default function BottomControls({
   const isDark = theme === "dark";
   const iconColor = isDark ? "#ffffff" : "#000000";
 
-  const buttonStyle = [
-    styles.button,
-    {
-      backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
-    },
-  ];
-
-  const pressWithHaptic = (
-    action: () => void,
-    intensity: "light" | "medium" = "light",
-  ) => {
-    if (hapticsEnabled) {
-      if (intensity === "medium") {
-        void triggerMediumHaptic();
-      } else {
-        void triggerLightHaptic();
-      }
-    }
-    action();
+  const openSettings = () => {
+    if (hapticsEnabled) void triggerLightHaptic();
+    onSettingsToggle();
   };
-
-  const renderButton = (
-    visible: boolean,
-    icon: React.ReactNode,
-    onPress: () => void,
-    label: string,
-  ) => (
-    <View style={styles.slot}>
-      <Pressable
-        onPress={() => pressWithHaptic(onPress)}
-        accessibilityLabel={label}
-        disabled={!visible}
-        style={({ pressed }) => [
-          ...buttonStyle,
-          {
-            opacity: visible ? (pressed ? 0.75 : 1) : 0,
-            transform: [{ scale: pressed && visible ? 0.95 : 1 }],
-          },
-        ]}
-      >
-        {icon}
-      </Pressable>
-    </View>
-  );
 
   return (
     <View
       style={[
         styles.container,
-        { paddingBottom: Math.max(24, insets.bottom + 8), pointerEvents: "box-none" },
+        {
+          paddingBottom: Math.max(20, insets.bottom + 6),
+          pointerEvents: "box-none",
+        },
       ]}
     >
-      <View style={styles.row}>
-        {renderButton(!isActive, <ResetIcon color={iconColor} />, onReset, "Reset Timer")}
-        {renderButton(
-          !isActive,
-          <MinusIcon color={iconColor} />,
-          onDecrement,
-          "Decrease Time",
+      {showGestureHint ? (
+        <Text
+          style={[
+            styles.hint,
+            { color: isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)" },
+          ]}
+        >
+          Tap play/pause · Swipe ↕ adjust · Hold reset · Swipe ↔ settings
+        </Text>
+      ) : null}
+
+      <Pressable
+        onPress={openSettings}
+        accessibilityLabel="Settings"
+        style={({ pressed }) => [
+          styles.button,
+          {
+            backgroundColor: isDark
+              ? "rgba(255,255,255,0.1)"
+              : "rgba(0,0,0,0.05)",
+            opacity: pressed ? 0.75 : 1,
+            transform: [{ scale: pressed ? 0.95 : 1 }],
+          },
+        ]}
+      >
+        {isSettingsOpen ? (
+          <CloseIcon color={iconColor} />
+        ) : (
+          <SettingsIcon color={iconColor} />
         )}
-
-        <View style={styles.slot}>
-          <Pressable
-            onPress={() => pressWithHaptic(onToggle, "medium")}
-            accessibilityLabel={isActive ? "Pause Timer" : "Start Timer"}
-            style={({ pressed }) => [
-              ...buttonStyle,
-              styles.primaryButton,
-              {
-                opacity: pressed ? 0.75 : 1,
-                transform: [{ scale: pressed ? 0.95 : 1.08 }],
-              },
-            ]}
-          >
-            {isActive ? (
-              <PauseIcon color={iconColor} />
-            ) : (
-              <PlayIcon color={iconColor} />
-            )}
-          </Pressable>
-        </View>
-
-        {renderButton(
-          !isActive,
-          <PlusIcon color={iconColor} />,
-          onIncrement,
-          "Increase Time",
-        )}
-
-        <View style={styles.slot}>
-          <Pressable
-            onPress={() => pressWithHaptic(onSettingsToggle)}
-            accessibilityLabel="Settings"
-            style={({ pressed }) => [
-              ...buttonStyle,
-              {
-                opacity: pressed ? 0.75 : 1,
-                transform: [{ scale: pressed ? 0.95 : 1 }],
-              },
-            ]}
-          >
-            {isSettingsOpen ? (
-              <CloseIcon color={iconColor} />
-            ) : (
-              <SettingsIcon color={iconColor} />
-            )}
-          </Pressable>
-        </View>
-      </View>
+      </Pressable>
 
       <SettingsControl isOpen={isSettingsOpen} onClose={onSettingsToggle} />
     </View>
@@ -160,30 +84,22 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 50,
+    alignItems: "center",
+    gap: 12,
     paddingHorizontal: 16,
   },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    maxWidth: 480,
-    alignSelf: "center",
-    width: "100%",
-  },
-  slot: {
-    flex: 1,
-    alignItems: "center",
+  hint: {
+    fontSize: 11,
+    fontWeight: "500",
+    letterSpacing: 0.2,
+    textAlign: "center",
+    paddingHorizontal: 12,
   },
   button: {
-    width: 56,
-    height: 56,
+    width: 52,
+    height: 52,
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
-  },
-  primaryButton: {
-    width: 60,
-    height: 60,
   },
 });

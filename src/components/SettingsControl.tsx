@@ -363,6 +363,21 @@ export default function SettingsControl({
               </View>
             </View>
 
+            <View style={styles.section}>
+              <Text style={[styles.label, isDark && styles.labelDark]}>
+                Gestures
+              </Text>
+              <Text
+                style={[
+                  styles.helpText,
+                  { color: isDark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.55)" },
+                ]}
+              >
+                Tap to play/pause · Swipe up/down to adjust time · Hold to
+                reset · Swipe left/right for settings
+              </Text>
+            </View>
+
             <Pressable
               onPress={() => {
                 if (hapticsEnabled) void triggerLightHaptic();
@@ -482,6 +497,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: "center",
+  },
+  helpText: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "500",
   },
   coffeeText: {
     color: "#000000",
