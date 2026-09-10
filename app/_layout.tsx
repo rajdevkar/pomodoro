@@ -1,5 +1,6 @@
 import "react-native-gesture-handler";
 import JotaiProvider from "@/components/JotaiProvider";
+import { themeAtom } from "@/store/atoms";
 import { Fascinate_400Regular } from "@expo-google-fonts/fascinate";
 import {
   Orbitron_400Regular,
@@ -18,11 +19,18 @@ import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useAtomValue } from "jotai";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
+
+function ThemedStatusBar() {
+  const theme = useAtomValue(themeAtom);
+  // "light" = light icons (for dark backgrounds); "dark" = dark icons (for light backgrounds)
+  return <StatusBar style={theme === "dark" ? "light" : "dark"} />;
+}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -50,7 +58,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <JotaiProvider>
-          <StatusBar style="auto" />
+          <ThemedStatusBar />
           <Stack screenOptions={{ headerShown: false, animation: "fade" }} />
         </JotaiProvider>
       </SafeAreaProvider>
