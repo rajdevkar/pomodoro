@@ -5,11 +5,13 @@ A minimalist Pomodoro timer built with Expo (React Native) for iOS, Android, and
 ## Features
 
 - Countdown timer with start / pause / reset
-- Adjustable duration (1–60 minutes) and step amounts
-- Theme (light / dark), font family, and font size settings
+- Dual minute/second wheels to set duration
+- Theme (light / dark)
 - Persisted timer + settings via AsyncStorage
 - Screen keep-awake while the timer runs
-- Local notification + melody when the timer finishes (native)
+- Local notification + end sounds when the timer finishes (native)
+- Interactive home-screen widget (iOS + Android) with play / pause
+- iOS Live Activity / Dynamic Island countdown while focusing
 - Web completion sound via Web Audio API
 
 ## Getting Started
@@ -25,6 +27,8 @@ Then press:
 - `i` for iOS simulator (macOS)
 - `w` for web
 - or scan the QR code with Expo Go
+
+> **Widgets & Dynamic Island** require a native binary. They are **not available in Expo Go**. After installing `expo-widgets`, create a new development or preview build (`npm run eas:build:preview` or the `development` EAS profile), install it on a device, then add the **Timo** widget from the home-screen gallery. On iPhone, start the timer to show the Live Activity in Dynamic Island / Lock Screen.
 
 ## Scripts
 
@@ -94,6 +98,8 @@ Install the builds on physical devices and verify:
 - Notification permission prompt + timer-finished alert
 - Keep-awake while the timer runs
 - Completion sound (including iOS silent mode)
+- Home-screen **Timo** widget play / pause (iOS + Android)
+- iOS Dynamic Island / Lock Screen Live Activity while the timer runs
 
 #### Production builds + store submission
 
@@ -121,15 +127,12 @@ You still need to complete store listing metadata (screenshots, description, pri
 - **Jotai + AsyncStorage** — persisted timer and settings state
 - **StyleSheet** — cross-platform styling
 - **expo-notifications** — native timer-finished alerts
-- **expo-av** — generated WAV melody on native; Web Audio API on web
+- **expo-audio** — generated WAV sounds on native; Web Audio API on web
 - **expo-keep-awake** — prevents screen sleep during active timer
+- **expo-widgets + @expo/ui** — home-screen widget and iOS Live Activity / Dynamic Island
 
 ## Font mapping
 
 | Original (web) | Expo |
 | --- | --- |
 | Geist | Space Grotesk |
-| Doto | Outfit |
-| Fascinate | Fascinate |
-| Sixtyfour | Sixtyfour |
-| Orbitron | Orbitron |

@@ -22,11 +22,16 @@ import {
   requestNotificationPermissions,
   sendTimerFinishedNotification,
 } from "@/utils/notifications";
+import {
+  scheduleRunningWidgetTimeline,
+  subscribeTimerSurfaceInteractions,
+  syncTimerSurfaces,
+} from "@/utils/timerSurfaces";
 import { clampDurationMs } from "@/utils/timeUtils";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { AppState, StyleSheet, View } from "react-native";
 
 export default function PomodoroTimer() {
   const [durationMs, setDurationMs] = useAtom(durationMsAtom);
@@ -41,6 +46,17 @@ export default function PomodoroTimer() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const completingRef = useRef(false);
   const lastTickSecondRef = useRef<number | null>(null);
+  const applyingWidgetRef = useRef(false);
+
+  const surfaceState = useCallback(
+    () => ({
+      isActive,
+      targetEndTime,
+      remainingTime,
+      durationMs,
+    }),
+    [durationMs, isActive, remainingTime, targetEndTime],
+  );
 
   const haptic = useCallback((intensity: "light" | "medium" = "light") => {
     if (intensity === "medium") {
@@ -65,6 +81,13 @@ export default function PomodoroTimer() {
     } catch {
       // ignore if wake lock was never activated
     }
+
+    syncTimerSurfaces({
+      isActive: false,
+      targetEndTime: null,
+      remainingTime: null,
+      durationMs,
+    });
 
     await sendTimerFinishedNotification();
     await playEndSound(endSound);
@@ -94,6 +117,12 @@ export default function PomodoroTimer() {
     }
 
     void requestNotificationPermissions();
+    syncTimerSurfaces({
+      isActive,
+      targetEndTime,
+      remainingTime,
+      durationMs,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -102,6 +131,67 @@ export default function PomodoroTimer() {
       setTimeLeftMs(durationMs);
     }
   }, [durationMs, isActive, remainingTime]);
+
+  useEffect(() => {
+    if (applyingWidgetRef.current) return;
+    if (isActive && targetEndTime) {
+      scheduleRunningWidgetTimeline(surfaceState());
+    } else {
+      syncTimerSurfaces(surfaceState());
+    }
+  }, [isActive, remainingTime, surfaceState, targetEndTime]);
+
+  useEffect(() => {
+    const subscription = subscribeTimerSurfaceInteractions((next) => {
+      applyingWidgetRef.current = true;
+      setIsActive(next.isActive);
+      setTargetEndTime(next.targetEndTime);
+      setRemainingTime(next.remainingTime);
+
+      if (next.isActive && next.targetEndTime) {
+        const remaining = Math.max(0, next.targetEndTime - Date.now());
+        setTimeLeftMs(remaining);
+        lastTickSecondRef.current = Math.ceil(remaining / 1000);
+        activateKeepAwakeAsync("timo-timer").catch(() => undefined);
+      } else if (next.remainingTime !== null) {
+        setTimeLeftMs(next.remainingTime);
+        lastTickSecondRef.current = null;
+        deactivateKeepAwake("timo-timer").catch(() => undefined);
+      } else {
+        setTimeLeftMs(durationMs);
+        lastTickSecondRef.current = null;
+        deactivateKeepAwake("timo-timer").catch(() => undefined);
+      }
+
+      requestAnimationFrame(() => {
+        applyingWidgetRef.current = false;
+      });
+    });
+
+    const appStateSub = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        syncTimerSurfaces({
+          isActive,
+          targetEndTime,
+          remainingTime,
+          durationMs,
+        });
+      }
+    });
+
+    return () => {
+      subscription.remove();
+      appStateSub.remove();
+    };
+  }, [
+    durationMs,
+    isActive,
+    remainingTime,
+    setIsActive,
+    setRemainingTime,
+    setTargetEndTime,
+    targetEndTime,
+  ]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
@@ -151,6 +241,12 @@ export default function PomodoroTimer() {
       setRemainingTime(null);
       setTargetEndTime(null);
       setTimeLeftMs(next);
+      syncTimerSurfaces({
+        isActive: false,
+        targetEndTime: null,
+        remainingTime: null,
+        durationMs: next,
+      });
     },
     [isActive, setDurationMs, setRemainingTime, setTargetEndTime],
   );
@@ -167,15 +263,28 @@ export default function PomodoroTimer() {
       setIsActive(true);
       lastTickSecondRef.current = Math.ceil(duration / 1000);
       activateKeepAwakeAsync("timo-timer").catch(() => undefined);
+      scheduleRunningWidgetTimeline({
+        isActive: true,
+        targetEndTime: target,
+        remainingTime: null,
+        durationMs,
+      });
     } else {
+      let remaining = remainingTime;
       if (targetEndTime) {
-        const remaining = Math.max(0, targetEndTime - Date.now());
+        remaining = Math.max(0, targetEndTime - Date.now());
         setRemainingTime(remaining);
       }
       setTargetEndTime(null);
       setIsActive(false);
       lastTickSecondRef.current = null;
       deactivateKeepAwake("timo-timer").catch(() => undefined);
+      syncTimerSurfaces({
+        isActive: false,
+        targetEndTime: null,
+        remainingTime: remaining ?? null,
+        durationMs,
+      });
     }
   }, [
     durationMs,
@@ -197,6 +306,12 @@ export default function PomodoroTimer() {
     lastTickSecondRef.current = null;
     deactivateKeepAwake("timo-timer").catch(() => undefined);
     setToastMessage("Reset");
+    syncTimerSurfaces({
+      isActive: false,
+      targetEndTime: null,
+      remainingTime: null,
+      durationMs,
+    });
   }, [
     durationMs,
     haptic,

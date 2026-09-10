@@ -44,7 +44,25 @@
           "sounds": []
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "dev.rajdevkar.timo.widgets",
+          "groupIdentifier": "group.dev.rajdevkar.timo",
+          "frequentUpdates": true,
+          "enableAndroid": true,
+          "widgets": [
+            {
+              "name": "TimoWidget",
+              "displayName": "Timo",
+              "description": "Focus timer with play and pause",
+              "contentMarginsDisabled": true,
+              "supportedFamilies": ["systemSmall", "systemMedium"]
+            }
+          ]
+        }
+      ]
     ],
     "extra": {
       "eas": {
