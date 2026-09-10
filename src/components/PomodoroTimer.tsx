@@ -9,7 +9,6 @@ import {
   remainingTimeAtom,
   stepMinutesAtom,
   targetEndTimeAtom,
-  themeAtom,
   tickingSoundAtom,
   toastMessageAtom,
 } from "@/store/atoms";
@@ -19,20 +18,14 @@ import { requestNotificationPermissions, sendTimerFinishedNotification } from "@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StyleSheet, View } from "react-native";
 
-interface PomodoroTimerProps {
-  fontFamilies: string[];
-}
-
-export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
+export default function PomodoroTimer() {
   const stepMinutes = useAtomValue(stepMinutesAtom);
   const [durationMinutes, setDurationMinutes] = useAtom(durationMinutesAtom);
   const [isActive, setIsActive] = useAtom(isActiveAtom);
   const [targetEndTime, setTargetEndTime] = useAtom(targetEndTimeAtom);
   const [remainingTime, setRemainingTime] = useAtom(remainingTimeAtom);
-  const theme = useAtomValue(themeAtom);
   const hapticsEnabled = useAtomValue(hapticsEnabledAtom);
   const tickingSound = useAtomValue(tickingSoundAtom);
   const endSound = useAtomValue(endSoundAtom);
@@ -40,7 +33,6 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
 
   const [timeLeftMs, setTimeLeftMs] = useState(durationMinutes * 60 * 1000);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const insets = useSafeAreaInsets();
   const completingRef = useRef(false);
   const lastTickSecondRef = useRef<number | null>(null);
 
@@ -197,40 +189,9 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
     deactivateKeepAwake("timo-timer").catch(() => undefined);
   };
 
-  const isDark = theme === "dark";
-
   return (
     <View style={styles.root}>
-      <View
-        style={[
-          styles.portfolioRow,
-          { paddingTop: Math.max(16, insets.top), pointerEvents: "box-none" },
-        ]}
-      >
-        <Pressable
-          onPress={() => Linking.openURL("https://rajdevkar.dev")}
-          style={({ pressed }) => [
-            styles.portfolioLink,
-            {
-              backgroundColor: isDark
-                ? "rgba(255,255,255,0.1)"
-                : "rgba(0,0,0,0.05)",
-              opacity: pressed ? 0.8 : 1,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.portfolioText,
-              { color: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" },
-            ]}
-          >
-            rajdevkar.dev
-          </Text>
-        </Pressable>
-      </View>
-
-      <TimerDisplay timeLeftMs={timeLeftMs} fontFamilies={fontFamilies} />
+      <TimerDisplay timeLeftMs={timeLeftMs} />
 
       <BottomControls
         isActive={isActive}
@@ -250,22 +211,5 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-  },
-  portfolioRow: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 50,
-    alignItems: "center",
-  },
-  portfolioLink: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  portfolioText: {
-    fontSize: 12,
-    fontWeight: "500",
   },
 });

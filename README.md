@@ -118,7 +118,6 @@ You still need to complete store listing metadata (screenshots, description, pri
 
 ## Architecture
 
-- **Expo Router** — file-based routing (`app/`)
 - **Jotai + AsyncStorage** — persisted timer and settings state
 - **StyleSheet** — cross-platform styling
 - **expo-notifications** — native timer-finished alerts

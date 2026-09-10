@@ -1,23 +1,32 @@
-import { fontNames } from "@/constants/timerConstants";
+import { fontFamilies, fontNames } from "@/constants/timerConstants";
 import {
   fontIndexAtom,
   fontSizePercentAtom,
   themeAtom,
 } from "@/store/atoms";
 import { formatTime } from "@/utils/timeUtils";
+import { Fascinate_400Regular } from "@expo-google-fonts/fascinate";
+import { Orbitron_700Bold } from "@expo-google-fonts/orbitron";
+import { Outfit_700Bold } from "@expo-google-fonts/outfit";
+import { Sixtyfour_400Regular } from "@expo-google-fonts/sixtyfour";
+import { SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk";
+import { useFonts } from "expo-font";
 import { useAtomValue } from "jotai";
 import React from "react";
 import { Dimensions, StyleSheet, Text, View } from "react-native";
 
 interface TimerDisplayProps {
   timeLeftMs: number;
-  fontFamilies: string[];
 }
 
-export default function TimerDisplay({
-  timeLeftMs,
-  fontFamilies,
-}: TimerDisplayProps) {
+export default function TimerDisplay({ timeLeftMs }: TimerDisplayProps) {
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_700Bold,
+    Outfit_700Bold,
+    Fascinate_400Regular,
+    Sixtyfour_400Regular,
+    Orbitron_700Bold,
+  });
   const theme = useAtomValue(themeAtom);
   const fontIndex = useAtomValue(fontIndexAtom);
   const fontSizePercent = useAtomValue(fontSizePercentAtom);
@@ -44,8 +53,7 @@ export default function TimerDisplay({
           {
             color: isDark ? "#ffffff" : "#000000",
             fontSize,
-            fontFamily: family,
-            // Fascinate / display fonts look better slightly lighter weight
+            fontFamily: fontsLoaded ? family : undefined,
             fontWeight: fontNames[fontIndex] === "Fascinate" ? "400" : "700",
           },
         ]}

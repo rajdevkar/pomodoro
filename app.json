@@ -5,7 +5,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "timo",
     "userInterfaceStyle": "automatic",
     "owner": "tronix99",
     "ios": {
@@ -36,16 +35,7 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-router",
       "expo-font",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#000000",
-          "image": "./assets/splash-icon.png",
-          "imageWidth": 200
-        }
-      ],
       [
         "expo-notifications",
         {
@@ -55,11 +45,7 @@
         }
       ]
     ],
-    "experiments": {
-      "typedRoutes": true
-    },
     "extra": {
-      "router": {},
       "eas": {
         "projectId": "b5a5b6cd-07f4-4d53-a98c-041d36416b42"
       }
