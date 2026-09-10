@@ -33,8 +33,16 @@ export default function TimerDisplay({
   const colonOpacity = useRef(new Animated.Value(1)).current;
 
   const { height, width } = Dimensions.get("window");
-  const { fontSize, itemHeight, columnWidth, colonWidth, timeWidth } =
-    timerLayout(fontIndex, width, height, fontSizePercent);
+  const {
+    fontSize,
+    itemHeight,
+    columnWidth,
+    colonWidth,
+    timeWidth,
+    neighborSize,
+    neighborStride,
+    neighborBand,
+  } = timerLayout(fontIndex, width, height, fontSizePercent);
 
   const isDark = theme === "dark";
   const family = fontFamilies[fontIndex] ?? fontFamilies[0];
@@ -87,6 +95,7 @@ export default function TimerDisplay({
             {
               color: muted,
               width: timeWidth,
+              marginBottom: neighborBand,
             },
           ]}
         >
@@ -115,6 +124,8 @@ export default function TimerDisplay({
             columnWidth={columnWidth}
             fontSize={fontSize}
             fontFamily={family}
+            neighborSize={neighborSize}
+            neighborStride={neighborStride}
             color={color}
             hapticsEnabled={hapticsEnabled}
             onChange={(nextMinutes) => applyParts(nextMinutes, seconds)}
@@ -146,13 +157,15 @@ export default function TimerDisplay({
             columnWidth={columnWidth}
             fontSize={fontSize}
             fontFamily={family}
+            neighborSize={neighborSize}
+            neighborStride={neighborStride}
             color={color}
             hapticsEnabled={hapticsEnabled}
             onChange={(nextSeconds) => applyParts(minutes, nextSeconds)}
           />
         </View>
 
-        <View style={[styles.labels, { width: timeWidth }]}>
+        <View style={[styles.labels, { width: timeWidth, marginTop: neighborBand }]}>
           <Text style={[styles.unitLabel, { width: columnWidth, color: muted }]}>
             min
           </Text>
@@ -183,7 +196,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     textAlign: "center",
     paddingLeft: 2,
-    marginBottom: 22,
+    zIndex: 2,
   },
   stage: {
     flexDirection: "row",
@@ -210,7 +223,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 16,
+    zIndex: 2,
   },
   unitLabel: {
     fontSize: 11,

@@ -50,12 +50,22 @@ export function timerLayout(
     colonWidth = Math.round(colonWidth * scale);
   }
 
+  const neighborSize = Math.round(fontSize * 0.3);
+  const neighborStride = Math.round(itemHeight * 0.78 + neighborSize * 0.7);
+  const neighborBand = Math.max(
+    36,
+    neighborStride - itemHeight / 2 + neighborSize * 0.7 + 12,
+  );
+
   return {
     fontSize,
     itemHeight,
     columnWidth,
     colonWidth,
     timeWidth: columnWidth * 2 + colonWidth,
+    neighborSize,
+    neighborStride,
+    neighborBand,
   };
 }
 

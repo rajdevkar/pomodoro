@@ -13,6 +13,8 @@ interface TimeColumnProps {
   columnWidth: number;
   fontSize: number;
   fontFamily: string;
+  neighborSize: number;
+  neighborStride: number;
   color: string;
   hapticsEnabled: boolean;
   onChange: (value: number) => void;
@@ -27,6 +29,8 @@ export default function TimeColumn({
   columnWidth,
   fontSize,
   fontFamily,
+  neighborSize,
+  neighborStride,
   color,
   hapticsEnabled,
   onChange,
@@ -37,7 +41,6 @@ export default function TimeColumn({
   const startValueRef = useRef(value);
   const displayValueRef = useRef(value);
   const hideNeighborsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const neighborStride = Math.round(itemHeight * 0.82);
 
   useEffect(() => {
     setDisplayValue(value);
@@ -123,14 +126,12 @@ export default function TimeColumn({
       hideNeighborsSoon();
     });
 
-  const neighbors = [-2, -1, 1, 2].map((offset) => {
+  const neighbors = [-1, 1].map((offset) => {
     const itemValue = displayValue + offset;
-    const neighborFontSize = fontSize * (Math.abs(offset) === 1 ? 0.34 : 0.24);
     return {
       offset,
       itemValue,
-      neighborFontSize,
-      top: itemHeight / 2 + offset * neighborStride - neighborFontSize * 0.6,
+      top: itemHeight / 2 + offset * neighborStride - neighborSize * 0.55,
       visible: itemValue >= min && itemValue <= max,
     };
   });
@@ -142,27 +143,25 @@ export default function TimeColumn({
           pointerEvents="none"
           style={[styles.neighbors, { opacity: neighborOpacity }]}
         >
-          {neighbors.map(
-            ({ offset, itemValue, neighborFontSize, top, visible }) => (
-              <Text
-                key={offset}
-                numberOfLines={1}
-                style={[
-                  styles.digit,
-                  styles.neighbor,
-                  {
-                    top,
-                    color,
-                    fontSize: neighborFontSize,
-                    fontFamily,
-                    opacity: visible ? (Math.abs(offset) === 1 ? 0.38 : 0.18) : 0,
-                  },
-                ]}
-              >
-                {visible ? pad2(itemValue) : " "}
-              </Text>
-            ),
-          )}
+          {neighbors.map(({ offset, itemValue, top, visible }) => (
+            <Text
+              key={offset}
+              numberOfLines={1}
+              style={[
+                styles.digit,
+                styles.neighbor,
+                {
+                  top,
+                  color,
+                  fontSize: neighborSize,
+                  fontFamily,
+                  opacity: visible ? 0.36 : 0,
+                },
+              ]}
+            >
+              {visible ? pad2(itemValue) : " "}
+            </Text>
+          ))}
         </Animated.View>
 
         <Animated.View
