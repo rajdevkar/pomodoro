@@ -37,9 +37,11 @@ export default function TimerDisplay({
     Math.max((fontSizePercent / 100) * height * 0.2, 40),
     width * 0.24,
   );
-  const itemHeight = Math.round(fontSize * 0.98);
-  const columnWidth = Math.round(fontSize * 1.22);
-  const colonWidth = Math.round(fontSize * 0.42);
+  const itemHeight = Math.round(fontSize * 1.08);
+  const columnWidth = Math.round(fontSize * 1.36);
+  const colonWidth = Math.round(fontSize * 0.3);
+  const timeWidth = columnWidth * 2 + colonWidth;
+  const colonLineHeight = Math.round(fontSize * 1.02);
 
   const isDark = theme === "dark";
   const family = fontFamilies[fontIndex] ?? fontFamilies[0];
@@ -85,16 +87,25 @@ export default function TimerDisplay({
         { backgroundColor: isDark ? "#000000" : "#ffffff" },
       ]}
     >
-      <View style={styles.cluster}>
-        <Text style={[styles.status, { color: muted }]}>{status}</Text>
+      <View style={[styles.cluster, { width: timeWidth }]}>
+        <Text
+          style={[
+            styles.status,
+            {
+              color: muted,
+              width: timeWidth,
+            },
+          ]}
+        >
+          {status}
+        </Text>
 
-        <View style={[styles.timeBlock, { height: itemHeight }]}>
+        <View style={[styles.stage, { width: timeWidth, height: itemHeight }]}>
           <View
             pointerEvents="none"
             style={[
               styles.selection,
               {
-                height: itemHeight,
                 backgroundColor: isDark
                   ? "rgba(255,255,255,0.07)"
                   : "rgba(0,0,0,0.05)",
@@ -115,22 +126,22 @@ export default function TimerDisplay({
             hapticsEnabled={hapticsEnabled}
             onChange={(nextMinutes) => applyParts(nextMinutes, seconds)}
           />
-          <Animated.Text
-            style={[
-              styles.colon,
-              {
-                color,
-                fontSize,
-                fontFamily: family,
-                width: colonWidth,
-                height: itemHeight,
-                lineHeight: itemHeight,
-                opacity: colonOpacity,
-              },
-            ]}
-          >
-            :
-          </Animated.Text>
+          <View style={[styles.colonSlot, { width: colonWidth, height: itemHeight }]}>
+            <Animated.Text
+              style={[
+                styles.colon,
+                {
+                  color,
+                  fontSize,
+                  fontFamily: family,
+                  lineHeight: colonLineHeight,
+                  opacity: colonOpacity,
+                },
+              ]}
+            >
+              :
+            </Animated.Text>
+          </View>
           <TimeColumn
             value={seconds}
             min={0}
@@ -146,7 +157,7 @@ export default function TimerDisplay({
           />
         </View>
 
-        <View style={styles.labels}>
+        <View style={[styles.labels, { width: timeWidth }]}>
           <Text style={[styles.unitLabel, { width: columnWidth, color: muted }]}>
             min
           </Text>
@@ -172,25 +183,31 @@ const styles = StyleSheet.create({
   status: {
     fontSize: 12,
     fontWeight: "600",
-    letterSpacing: 1.4,
+    letterSpacing: 2,
+    lineHeight: 16,
     textTransform: "uppercase",
-    marginBottom: 10,
+    textAlign: "center",
+    paddingLeft: 2,
+    marginBottom: 22,
   },
-  timeBlock: {
+  stage: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     overflow: "visible",
   },
   selection: {
-    position: "absolute",
-    left: -14,
-    right: -14,
-    borderRadius: 20,
+    ...StyleSheet.absoluteFill,
+    left: -20,
+    right: -20,
+    borderRadius: 22,
+  },
+  colonSlot: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   colon: {
     textAlign: "center",
-    letterSpacing: 0,
     includeFontPadding: false,
     textAlignVertical: "center",
   },
@@ -198,13 +215,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 6,
+    marginTop: 16,
   },
   unitLabel: {
     fontSize: 11,
     fontWeight: "600",
-    letterSpacing: 1.1,
+    letterSpacing: 1.4,
+    lineHeight: 14,
     textTransform: "uppercase",
     textAlign: "center",
+    paddingLeft: 1.4,
   },
 });

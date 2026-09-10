@@ -37,7 +37,8 @@ export default function TimeColumn({
   const startValueRef = useRef(value);
   const displayValueRef = useRef(value);
   const hideNeighborsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const neighborStep = Math.round(fontSize * 0.52);
+  const neighborStride = Math.round(itemHeight * 0.78);
+  const centerLineHeight = Math.round(fontSize * 1.02);
 
   useEffect(() => {
     setDisplayValue(value);
@@ -101,10 +102,10 @@ export default function TimeColumn({
       showNeighbors();
     })
     .onUpdate((event) => {
-      const steps = Math.round(-event.translationY / neighborStep);
+      const steps = Math.round(-event.translationY / neighborStride);
       const next = setLiveValue(startValueRef.current + steps);
       const remainder =
-        event.translationY + (next - startValueRef.current) * neighborStep;
+        event.translationY + (next - startValueRef.current) * neighborStride;
       translateY.setValue(remainder);
     })
     .onEnd((event) => {
@@ -125,9 +126,12 @@ export default function TimeColumn({
 
   const neighbors = [-2, -1, 1, 2].map((offset) => {
     const itemValue = displayValue + offset;
+    const neighborFontSize = fontSize * (Math.abs(offset) === 1 ? 0.34 : 0.24);
     return {
       offset,
       itemValue,
+      neighborFontSize,
+      top: itemHeight / 2 + offset * neighborStride - neighborFontSize / 2,
       visible: itemValue >= min && itemValue <= max,
     };
   });
@@ -139,24 +143,28 @@ export default function TimeColumn({
           pointerEvents="none"
           style={[styles.neighbors, { opacity: neighborOpacity }]}
         >
-          {neighbors.map(({ offset, itemValue, visible }) => (
-            <Text
-              key={offset}
-              style={[
-                styles.neighbor,
-                {
-                  top: itemHeight / 2 + offset * neighborStep - fontSize * 0.22,
-                  width: columnWidth,
-                  color,
-                  fontSize: fontSize * (Math.abs(offset) === 1 ? 0.36 : 0.26),
-                  fontFamily,
-                  opacity: visible ? (Math.abs(offset) === 1 ? 0.4 : 0.2) : 0,
-                },
-              ]}
-            >
-              {visible ? pad2(itemValue) : " "}
-            </Text>
-          ))}
+          {neighbors.map(
+            ({ offset, itemValue, neighborFontSize, top, visible }) => (
+              <Text
+                key={offset}
+                style={[
+                  styles.digit,
+                  styles.neighbor,
+                  {
+                    top,
+                    width: columnWidth,
+                    color,
+                    fontSize: neighborFontSize,
+                    lineHeight: neighborFontSize,
+                    fontFamily,
+                    opacity: visible ? (Math.abs(offset) === 1 ? 0.38 : 0.18) : 0,
+                  },
+                ]}
+              >
+                {visible ? pad2(itemValue) : " "}
+              </Text>
+            ),
+          )}
         </Animated.View>
 
         <Animated.View
@@ -167,12 +175,12 @@ export default function TimeColumn({
         >
           <Text
             style={[
-              styles.centerText,
+              styles.digit,
               {
                 color,
                 fontSize,
                 fontFamily,
-                lineHeight: itemHeight,
+                lineHeight: centerLineHeight,
               },
             ]}
           >
@@ -195,18 +203,17 @@ const styles = StyleSheet.create({
   },
   neighbor: {
     position: "absolute",
-    textAlign: "center",
-    letterSpacing: -1,
-    includeFontPadding: false,
+    left: 0,
   },
   center: {
+    width: "100%",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1,
   },
-  centerText: {
+  digit: {
+    width: "100%",
     textAlign: "center",
-    letterSpacing: -2,
     includeFontPadding: false,
     textAlignVertical: "center",
   },
