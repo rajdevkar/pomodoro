@@ -1,5 +1,9 @@
 import TimeColumn from "@/components/TimeColumn";
-import { fontFamilies, timerLayout } from "@/constants/timerConstants";
+import {
+  fontFamilies,
+  resolveFontIndex,
+  timerLayout,
+} from "@/constants/timerConstants";
 import {
   fontIndexAtom,
   fontSizePercentAtom,
@@ -31,11 +35,12 @@ export default function TimerDisplay({
   const colonOpacity = useRef(new Animated.Value(1)).current;
 
   const { height, width } = Dimensions.get("window");
+  const safeFontIndex = resolveFontIndex(fontIndex);
   const { fontSize, itemHeight, columnWidth, colonWidth, baselineNudge } =
-    timerLayout(fontIndex, width, height, fontSizePercent);
+    timerLayout(safeFontIndex, width, height, fontSizePercent);
 
   const isDark = theme === "dark";
-  const family = fontFamilies[fontIndex] ?? fontFamilies[0];
+  const family = fontFamilies[safeFontIndex] ?? fontFamilies[0];
   const color = isDark ? "#ffffff" : "#000000";
   const { minutes, seconds } = splitTime(timeLeftMs);
   const wheelHeight = itemHeight * 3;

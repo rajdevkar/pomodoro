@@ -1,28 +1,18 @@
-export const fontNames = [
-  "Space Grotesk",
-  "Outfit",
-  "Fascinate",
-  "VT323",
-  "Orbitron",
-];
+export const fontNames = ["Space Grotesk", "Outfit"];
 
 /** Registered expo-font family names, aligned with fontNames */
-export const fontFamilies = [
-  "SpaceGrotesk_700Bold",
-  "Outfit_700Bold",
-  "Fascinate_400Regular",
-  "VT323_400Regular",
-  "Orbitron_700Bold",
-];
+export const fontFamilies = ["SpaceGrotesk_700Bold", "Outfit_700Bold"];
 
 /** Per-font digit box. baselineNudge is a fraction of fontSize, positive shifts down. */
 export const fontMetrics = [
   { digitWidth: 1.34, rowHeight: 1.2, sizeScale: 1, colonWidth: 0.42, baselineNudge: 0 },
   { digitWidth: 1.34, rowHeight: 1.2, sizeScale: 1, colonWidth: 0.42, baselineNudge: 0 },
-  { digitWidth: 1.72, rowHeight: 1.36, sizeScale: 0.78, colonWidth: 0.46, baselineNudge: 0.06 },
-  { digitWidth: 1.42, rowHeight: 1.18, sizeScale: 1.05, colonWidth: 0.4, baselineNudge: 0 },
-  { digitWidth: 1.64, rowHeight: 1.22, sizeScale: 0.88, colonWidth: 0.44, baselineNudge: 0 },
 ] as const;
+
+export function resolveFontIndex(fontIndex: number) {
+  if (fontIndex < 0 || fontIndex >= fontFamilies.length) return 0;
+  return fontIndex;
+}
 
 export function timerLayout(
   fontIndex: number,
@@ -30,7 +20,7 @@ export function timerLayout(
   viewportHeight: number,
   fontSizePercent: number,
 ) {
-  const metrics = fontMetrics[fontIndex] ?? fontMetrics[0];
+  const metrics = fontMetrics[resolveFontIndex(fontIndex)] ?? fontMetrics[0];
   const base = Math.min(
     Math.max((fontSizePercent / 100) * viewportHeight * 0.2, 40),
     viewportWidth * 0.24,

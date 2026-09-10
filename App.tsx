@@ -1,11 +1,8 @@
 import "react-native-gesture-handler";
 import PomodoroTimer from "@/components/PomodoroTimer";
 import { themeAtom } from "@/store/atoms";
-import { Fascinate_400Regular } from "@expo-google-fonts/fascinate";
-import { Orbitron_700Bold } from "@expo-google-fonts/orbitron";
 import { Outfit_700Bold } from "@expo-google-fonts/outfit";
 import { SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk";
-import { VT323_400Regular } from "@expo-google-fonts/vt323";
 import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
 import { Provider, useAtomValue } from "jotai";
@@ -35,9 +32,6 @@ export default function App() {
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_700Bold,
     Outfit_700Bold,
-    Fascinate_400Regular,
-    VT323_400Regular,
-    Orbitron_700Bold,
   });
 
   if (!fontsLoaded) {

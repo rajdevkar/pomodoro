@@ -1,4 +1,4 @@
-import { endSoundOptions, fontNames, tickSoundOptions } from "@/constants/timerConstants";
+import { endSoundOptions, fontNames, resolveFontIndex, tickSoundOptions } from "@/constants/timerConstants";
 import {
   endSoundAtom,
   fontIndexAtom,
@@ -12,7 +12,7 @@ import { playEndSound, playTickSound } from "@/utils/audioUtils";
 import { triggerLightHaptic } from "@/utils/haptics";
 import Slider from "@react-native-community/slider";
 import { useAtom } from "jotai";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Linking,
   Modal,
@@ -91,6 +91,11 @@ export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps)
   const [hapticsEnabled, setHapticsEnabled] = useAtom(hapticsEnabledAtom);
   const [tickingSound, setTickingSound] = useAtom(tickingSoundAtom);
   const [endSound, setEndSound] = useAtom(endSoundAtom);
+
+  useEffect(() => {
+    const safe = resolveFontIndex(fontIndex);
+    if (safe !== fontIndex) setFontIndex(safe);
+  }, [fontIndex, setFontIndex]);
 
   const isDark = theme === "dark";
   const accent = "#0A84FF";
@@ -261,7 +266,7 @@ export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps)
                 </Text>
                 <View style={styles.fontGrid}>
                   {fontNames.map((name, i) => {
-                    const selected = fontIndex === i;
+                    const selected = resolveFontIndex(fontIndex) === i;
                     return (
                       <Pressable
                         key={name}
