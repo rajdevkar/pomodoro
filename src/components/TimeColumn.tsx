@@ -13,8 +13,7 @@ interface TimeColumnProps {
   enabled: boolean;
   itemHeight: number;
   fontSize: number;
-  fontFamily?: string;
-  fontWeight: "400" | "700";
+  fontFamily: string;
   color: string;
   hapticsEnabled: boolean;
   onChange: (value: number) => void;
@@ -28,7 +27,6 @@ export default function TimeColumn({
   itemHeight,
   fontSize,
   fontFamily,
-  fontWeight,
   color,
   hapticsEnabled,
   onChange,
@@ -144,7 +142,6 @@ export default function TimeColumn({
                       color,
                       fontSize: isCenter ? fontSize : fontSize * 0.42,
                       fontFamily,
-                      fontWeight,
                       opacity: !visible ? 0 : isCenter ? 1 : 0.32,
                     },
                   ]}
@@ -171,6 +168,7 @@ const styles = StyleSheet.create({
   },
   text: {
     letterSpacing: -2,
-    fontVariant: ["tabular-nums"],
+    includeFontPadding: false,
+    textAlignVertical: "center",
   },
 });

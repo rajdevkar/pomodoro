@@ -1,6 +1,12 @@
 import "react-native-gesture-handler";
 import PomodoroTimer from "@/components/PomodoroTimer";
 import { themeAtom } from "@/store/atoms";
+import { Fascinate_400Regular } from "@expo-google-fonts/fascinate";
+import { Orbitron_700Bold } from "@expo-google-fonts/orbitron";
+import { Outfit_700Bold } from "@expo-google-fonts/outfit";
+import { Sixtyfour_400Regular } from "@expo-google-fonts/sixtyfour";
+import { SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk";
+import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
 import { Provider, useAtomValue } from "jotai";
 import React from "react";
@@ -26,6 +32,18 @@ function ThemedApp() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_700Bold,
+    Outfit_700Bold,
+    Fascinate_400Regular,
+    Sixtyfour_400Regular,
+    Orbitron_700Bold,
+  });
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
