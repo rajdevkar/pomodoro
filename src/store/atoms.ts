@@ -1,3 +1,4 @@
+import type { EndSoundId, TickSoundId } from "@/utils/audioUtils";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { atom } from "jotai";
 import { atomWithStorage, createJSONStorage } from "jotai/utils";
@@ -52,6 +53,24 @@ export const remainingTimeAtom = atomWithStorage<number | null>(
 export const isActiveAtom = atomWithStorage<boolean>(
   "pomodoro-is-active",
   false,
+  storage,
+);
+
+export const hapticsEnabledAtom = atomWithStorage<boolean>(
+  "pomodoro-haptics-enabled",
+  true,
+  storage,
+);
+
+export const tickingSoundAtom = atomWithStorage<TickSoundId>(
+  "pomodoro-ticking-sound",
+  "off",
+  storage,
+);
+
+export const endSoundAtom = atomWithStorage<EndSoundId>(
+  "pomodoro-end-sound",
+  "melody",
   storage,
 );
 

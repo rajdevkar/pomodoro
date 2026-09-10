@@ -1,11 +1,17 @@
-import { fontNames, stepOptions } from "@/constants/timerConstants";
+import { endSoundOptions, fontNames, stepOptions, tickSoundOptions } from "@/constants/timerConstants";
 import {
   durationMinutesAtom,
+  endSoundAtom,
   fontIndexAtom,
   fontSizePercentAtom,
+  hapticsEnabledAtom,
   stepMinutesAtom,
   themeAtom,
+  tickingSoundAtom,
 } from "@/store/atoms";
+import type { EndSoundId, TickSoundId } from "@/utils/audioUtils";
+import { playEndSound, playTickSound } from "@/utils/audioUtils";
+import { triggerLightHaptic } from "@/utils/haptics";
 import Slider from "@react-native-community/slider";
 import { useAtom } from "jotai";
 import React from "react";
@@ -35,8 +41,57 @@ export default function SettingsControl({
   const [fontSizePercent, setFontSizePercent] = useAtom(fontSizePercentAtom);
   const [stepMinutes, setStepMinutes] = useAtom(stepMinutesAtom);
   const [durationMinutes, setDurationMinutes] = useAtom(durationMinutesAtom);
+  const [hapticsEnabled, setHapticsEnabled] = useAtom(hapticsEnabledAtom);
+  const [tickingSound, setTickingSound] = useAtom(tickingSoundAtom);
+  const [endSound, setEndSound] = useAtom(endSoundAtom);
 
   const isDark = theme === "dark";
+
+  const withHaptic = (action: () => void) => {
+    if (hapticsEnabled) {
+      void triggerLightHaptic();
+    }
+    action();
+  };
+
+  const segmentBg = {
+    backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
+  };
+
+  const renderSegment = <T extends string>(
+    options: readonly { id: T; label: string }[],
+    selectedId: T,
+    onSelect: (id: T) => void,
+    wrap = false,
+  ) => (
+    <View style={[wrap ? styles.chipRow : styles.segment, segmentBg]}>
+      {options.map((option) => {
+        const selected = selectedId === option.id;
+        return (
+          <Pressable
+            key={option.id}
+            onPress={() => onSelect(option.id)}
+            style={[
+              wrap ? styles.chipItem : styles.segmentItem,
+              selected && {
+                backgroundColor: isDark ? "#3f3f46" : "#ffffff",
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.segmentText,
+                { color: isDark ? "#ffffff" : "#000000" },
+                !selected && styles.dimmed,
+              ]}
+            >
+              {option.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
 
   return (
     <Modal
@@ -66,18 +121,13 @@ export default function SettingsControl({
               <Text style={[styles.label, isDark && styles.labelDark]}>
                 Step Amount (Minutes)
               </Text>
-              <View
-                style={[
-                  styles.segment,
-                  { backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" },
-                ]}
-              >
+              <View style={[styles.segment, segmentBg]}>
                 {stepOptions.map((step) => {
                   const selected = stepMinutes === step;
                   return (
                     <Pressable
                       key={step}
-                      onPress={() => setStepMinutes(step)}
+                      onPress={() => withHaptic(() => setStepMinutes(step))}
                       style={[
                         styles.segmentItem,
                         selected && {
@@ -120,12 +170,76 @@ export default function SettingsControl({
                 step={1}
                 value={durationMinutes}
                 onValueChange={(value) => setDurationMinutes(Math.round(value))}
+                onSlidingComplete={() => {
+                  if (hapticsEnabled) void triggerLightHaptic();
+                }}
                 minimumTrackTintColor={isDark ? "#ffffff" : "#000000"}
                 maximumTrackTintColor={
                   isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)"
                 }
                 thumbTintColor={isDark ? "#ffffff" : "#000000"}
               />
+            </View>
+
+            <View
+              style={[
+                styles.divider,
+                {
+                  backgroundColor: isDark
+                    ? "rgba(255,255,255,0.1)"
+                    : "rgba(0,0,0,0.1)",
+                },
+              ]}
+            />
+
+            <View style={styles.section}>
+              <Text style={[styles.label, isDark && styles.labelDark]}>
+                Haptics
+              </Text>
+              {renderSegment(
+                [
+                  { id: "on", label: "On" },
+                  { id: "off", label: "Off" },
+                ] as const,
+                hapticsEnabled ? "on" : "off",
+                (id) => {
+                  const next = id === "on";
+                  setHapticsEnabled(next);
+                  if (next) void triggerLightHaptic();
+                },
+              )}
+            </View>
+
+            <View style={styles.section}>
+              <Text style={[styles.label, isDark && styles.labelDark]}>
+                Ticking Sound
+              </Text>
+              {renderSegment(
+                tickSoundOptions,
+                tickingSound,
+                (id) =>
+                  withHaptic(() => {
+                    setTickingSound(id);
+                    if (id !== "off") void playTickSound(id as TickSoundId);
+                  }),
+                true,
+              )}
+            </View>
+
+            <View style={styles.section}>
+              <Text style={[styles.label, isDark && styles.labelDark]}>
+                Timer End Sound
+              </Text>
+              {renderSegment(
+                endSoundOptions,
+                endSound,
+                (id) =>
+                  withHaptic(() => {
+                    setEndSound(id);
+                    if (id !== "off") void playEndSound(id as EndSoundId);
+                  }),
+                true,
+              )}
             </View>
 
             <View
@@ -149,7 +263,7 @@ export default function SettingsControl({
                   return (
                     <Pressable
                       key={name}
-                      onPress={() => setFontIndex(i)}
+                      onPress={() => withHaptic(() => setFontIndex(i))}
                       style={[
                         styles.fontButton,
                         selected && {
@@ -204,6 +318,9 @@ export default function SettingsControl({
                 onValueChange={(value) =>
                   setFontSizePercent(Math.round(value))
                 }
+                onSlidingComplete={() => {
+                  if (hapticsEnabled) void triggerLightHaptic();
+                }}
                 minimumTrackTintColor={isDark ? "#ffffff" : "#000000"}
                 maximumTrackTintColor={
                   isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)"
@@ -216,22 +333,13 @@ export default function SettingsControl({
               <Text style={[styles.label, isDark && styles.labelDark]}>
                 Theme
               </Text>
-              <View
-                style={[
-                  styles.segment,
-                  {
-                    backgroundColor: isDark
-                      ? "rgba(255,255,255,0.05)"
-                      : "rgba(0,0,0,0.05)",
-                  },
-                ]}
-              >
+              <View style={[styles.segment, segmentBg]}>
                 {(["light", "dark"] as const).map((t) => {
                   const selected = theme === t;
                   return (
                     <Pressable
                       key={t}
-                      onPress={() => setTheme(t)}
+                      onPress={() => withHaptic(() => setTheme(t))}
                       style={[
                         styles.segmentItem,
                         selected && {
@@ -256,9 +364,10 @@ export default function SettingsControl({
             </View>
 
             <Pressable
-              onPress={() =>
-                Linking.openURL("https://buymeacoffee.com/rajdevkar")
-              }
+              onPress={() => {
+                if (hapticsEnabled) void triggerLightHaptic();
+                Linking.openURL("https://buymeacoffee.com/rajdevkar");
+              }}
               style={styles.coffeeButton}
             >
               <Text style={styles.coffeeText}>Buy me a coffee</Text>
@@ -323,6 +432,20 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: "center",
+  },
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    borderRadius: 10,
+    padding: 4,
+    gap: 4,
+  },
+  chipItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignItems: "center",
+    minWidth: "22%",
   },
   segmentText: {
     fontSize: 12,

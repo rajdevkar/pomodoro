@@ -3,18 +3,24 @@ import TimerDisplay from "@/components/TimerDisplay";
 import Toast from "@/components/Toast";
 import {
   durationMinutesAtom,
+  endSoundAtom,
+  hapticsEnabledAtom,
   isActiveAtom,
   remainingTimeAtom,
   stepMinutesAtom,
   targetEndTimeAtom,
+  themeAtom,
+  tickingSoundAtom,
   toastMessageAtom,
 } from "@/store/atoms";
-import { playNotificationSound } from "@/utils/audioUtils";
+import { playEndSound, playTickSound } from "@/utils/audioUtils";
+import { triggerSuccessHaptic } from "@/utils/haptics";
 import { requestNotificationPermissions, sendTimerFinishedNotification } from "@/utils/notifications";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface PomodoroTimerProps {
   fontFamilies: string[];
@@ -26,11 +32,17 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
   const [isActive, setIsActive] = useAtom(isActiveAtom);
   const [targetEndTime, setTargetEndTime] = useAtom(targetEndTimeAtom);
   const [remainingTime, setRemainingTime] = useAtom(remainingTimeAtom);
+  const theme = useAtomValue(themeAtom);
+  const hapticsEnabled = useAtomValue(hapticsEnabledAtom);
+  const tickingSound = useAtomValue(tickingSoundAtom);
+  const endSound = useAtomValue(endSoundAtom);
   const setToastMessage = useSetAtom(toastMessageAtom);
 
   const [timeLeftMs, setTimeLeftMs] = useState(durationMinutes * 60 * 1000);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const insets = useSafeAreaInsets();
   const completingRef = useRef(false);
+  const lastTickSecondRef = useRef<number | null>(null);
 
   const handleTimerComplete = useCallback(async () => {
     if (completingRef.current) return;
@@ -40,6 +52,7 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
     setTargetEndTime(null);
     setRemainingTime(null);
     setTimeLeftMs(durationMinutes * 60 * 1000);
+    lastTickSecondRef.current = null;
 
     try {
       await deactivateKeepAwake("timo-timer");
@@ -48,11 +61,16 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
     }
 
     await sendTimerFinishedNotification();
-    await playNotificationSound();
+    await playEndSound(endSound);
+    if (hapticsEnabled) {
+      await triggerSuccessHaptic();
+    }
 
     completingRef.current = false;
   }, [
     durationMinutes,
+    endSound,
+    hapticsEnabled,
     setIsActive,
     setRemainingTime,
     setTargetEndTime,
@@ -62,6 +80,7 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
     if (isActive && targetEndTime) {
       const remaining = Math.max(0, targetEndTime - Date.now());
       setTimeLeftMs(remaining);
+      lastTickSecondRef.current = Math.ceil(remaining / 1000);
       if (remaining <= 0) {
         void handleTimerComplete();
       }
@@ -97,8 +116,20 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
           void handleTimerComplete();
         } else {
           setTimeLeftMs(diff);
+
+          const currentSecond = Math.ceil(diff / 1000);
+          if (
+            tickingSound !== "off" &&
+            lastTickSecondRef.current !== null &&
+            currentSecond < lastTickSecondRef.current
+          ) {
+            void playTickSound(tickingSound);
+          }
+          lastTickSecondRef.current = currentSecond;
         }
       }, 50);
+    } else {
+      lastTickSecondRef.current = null;
     }
 
     return () => {
@@ -107,7 +138,7 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
         deactivateKeepAwake("timo-timer").catch(() => undefined);
       }
     };
-  }, [handleTimerComplete, isActive, targetEndTime]);
+  }, [handleTimerComplete, isActive, targetEndTime, tickingSound]);
 
   const adjustTime = (direction: "increment" | "decrement") => {
     if (isActive) return;
@@ -143,6 +174,7 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
       setTargetEndTime(target);
       setRemainingTime(null);
       setIsActive(true);
+      lastTickSecondRef.current = Math.ceil(duration / 1000);
       activateKeepAwakeAsync("timo-timer").catch(() => undefined);
     } else {
       if (targetEndTime) {
@@ -151,6 +183,7 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
       }
       setTargetEndTime(null);
       setIsActive(false);
+      lastTickSecondRef.current = null;
       deactivateKeepAwake("timo-timer").catch(() => undefined);
     }
   };
@@ -160,11 +193,43 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
     setTargetEndTime(null);
     setRemainingTime(null);
     setTimeLeftMs(durationMinutes * 60 * 1000);
+    lastTickSecondRef.current = null;
     deactivateKeepAwake("timo-timer").catch(() => undefined);
   };
 
+  const isDark = theme === "dark";
+
   return (
     <View style={styles.root}>
+      <View
+        style={[
+          styles.portfolioRow,
+          { paddingTop: Math.max(16, insets.top), pointerEvents: "box-none" },
+        ]}
+      >
+        <Pressable
+          onPress={() => Linking.openURL("https://rajdevkar.dev")}
+          style={({ pressed }) => [
+            styles.portfolioLink,
+            {
+              backgroundColor: isDark
+                ? "rgba(255,255,255,0.1)"
+                : "rgba(0,0,0,0.05)",
+              opacity: pressed ? 0.8 : 1,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.portfolioText,
+              { color: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" },
+            ]}
+          >
+            rajdevkar.dev
+          </Text>
+        </Pressable>
+      </View>
+
       <TimerDisplay timeLeftMs={timeLeftMs} fontFamilies={fontFamilies} />
 
       <BottomControls
@@ -185,5 +250,22 @@ export default function PomodoroTimer({ fontFamilies }: PomodoroTimerProps) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  portfolioRow: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    alignItems: "center",
+  },
+  portfolioLink: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  portfolioText: {
+    fontSize: 12,
+    fontWeight: "500",
   },
 });

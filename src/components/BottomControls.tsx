@@ -1,4 +1,5 @@
-import { themeAtom } from "@/store/atoms";
+import { hapticsEnabledAtom, themeAtom } from "@/store/atoms";
+import { triggerLightHaptic, triggerMediumHaptic } from "@/utils/haptics";
 import { useAtomValue } from "jotai";
 import React from "react";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -32,6 +33,7 @@ export default function BottomControls({
   isSettingsOpen,
 }: BottomControlsProps) {
   const theme = useAtomValue(themeAtom);
+  const hapticsEnabled = useAtomValue(hapticsEnabledAtom);
   const insets = useSafeAreaInsets();
   const isDark = theme === "dark";
   const iconColor = isDark ? "#ffffff" : "#000000";
@@ -43,6 +45,20 @@ export default function BottomControls({
     },
   ];
 
+  const pressWithHaptic = (
+    action: () => void,
+    intensity: "light" | "medium" = "light",
+  ) => {
+    if (hapticsEnabled) {
+      if (intensity === "medium") {
+        void triggerMediumHaptic();
+      } else {
+        void triggerLightHaptic();
+      }
+    }
+    action();
+  };
+
   const renderButton = (
     visible: boolean,
     icon: React.ReactNode,
@@ -51,7 +67,7 @@ export default function BottomControls({
   ) => (
     <View style={styles.slot}>
       <Pressable
-        onPress={onPress}
+        onPress={() => pressWithHaptic(onPress)}
         accessibilityLabel={label}
         disabled={!visible}
         style={({ pressed }) => [
@@ -85,7 +101,7 @@ export default function BottomControls({
 
         <View style={styles.slot}>
           <Pressable
-            onPress={onToggle}
+            onPress={() => pressWithHaptic(onToggle, "medium")}
             accessibilityLabel={isActive ? "Pause Timer" : "Start Timer"}
             style={({ pressed }) => [
               ...buttonStyle,
@@ -113,7 +129,7 @@ export default function BottomControls({
 
         <View style={styles.slot}>
           <Pressable
-            onPress={onSettingsToggle}
+            onPress={() => pressWithHaptic(onSettingsToggle)}
             accessibilityLabel="Settings"
             style={({ pressed }) => [
               ...buttonStyle,
