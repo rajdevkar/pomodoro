@@ -27,16 +27,7 @@ import {
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Animated,
-  Dimensions,
-  Platform,
-  StyleSheet,
-  View,
-} from "react-native";
-
-const SCREEN_WIDTH = Dimensions.get("window").width;
-const useNativeDriver = Platform.OS !== "web";
+import { StyleSheet, View } from "react-native";
 
 export default function PomodoroTimer() {
   const stepMinutes = useAtomValue(stepMinutesAtom);
@@ -51,10 +42,8 @@ export default function PomodoroTimer() {
 
   const [timeLeftMs, setTimeLeftMs] = useState(durationMinutes * 60 * 1000);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsMounted, setSettingsMounted] = useState(false);
   const completingRef = useRef(false);
   const lastTickSecondRef = useRef<number | null>(null);
-  const settingsSlide = useRef(new Animated.Value(SCREEN_WIDTH)).current;
 
   const haptic = useCallback(
     (intensity: "light" | "medium" = "light") => {
@@ -257,31 +246,10 @@ export default function PomodoroTimer() {
     setToastMessage,
   ]);
 
-  const openSettings = useCallback(() => {
+  const toggleSettings = useCallback(() => {
     haptic("light");
-    setSettingsMounted(true);
-    setIsSettingsOpen(true);
-    settingsSlide.setValue(SCREEN_WIDTH);
-    Animated.spring(settingsSlide, {
-      toValue: 0,
-      useNativeDriver,
-      damping: 22,
-      stiffness: 220,
-      mass: 0.9,
-    }).start();
-  }, [haptic, settingsSlide]);
-
-  const closeSettings = useCallback(() => {
-    haptic("light");
-    setIsSettingsOpen(false);
-    Animated.timing(settingsSlide, {
-      toValue: SCREEN_WIDTH,
-      duration: 240,
-      useNativeDriver,
-    }).start(({ finished }) => {
-      if (finished) setSettingsMounted(false);
-    });
-  }, [haptic, settingsSlide]);
+    setIsSettingsOpen((open) => !open);
+  }, [haptic]);
 
   return (
     <View style={styles.root}>
@@ -291,28 +259,19 @@ export default function PomodoroTimer() {
         onLongPress={resetTimer}
         onSwipeUp={() => adjustTime("increment")}
         onSwipeDown={() => adjustTime("decrement")}
-        onSwipeHorizontal={openSettings}
+        onSwipeHorizontal={toggleSettings}
       >
         <TimerDisplay timeLeftMs={timeLeftMs} />
       </GestureSurface>
 
       <BottomControls
-        onOpenSettings={openSettings}
+        onOpenSettings={toggleSettings}
         showGestureHint={!isActive}
       />
 
       <Toast />
 
-      {settingsMounted ? (
-        <Animated.View
-          style={[
-            styles.settingsPage,
-            { transform: [{ translateX: settingsSlide }] },
-          ]}
-        >
-          <SettingsScreen onBack={closeSettings} />
-        </Animated.View>
-      ) : null}
+      <SettingsScreen isOpen={isSettingsOpen} onClose={toggleSettings} />
     </View>
   );
 }
@@ -320,9 +279,5 @@ export default function PomodoroTimer() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-  },
-  settingsPage: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 100,
   },
 });
