@@ -4,12 +4,11 @@ import SettingsScreen from "@/components/SettingsScreen";
 import TimerDisplay from "@/components/TimerDisplay";
 import Toast from "@/components/Toast";
 import {
-  durationMinutesAtom,
+  durationMsAtom,
   endSoundAtom,
   hapticsEnabledAtom,
   isActiveAtom,
   remainingTimeAtom,
-  stepMinutesAtom,
   targetEndTimeAtom,
   tickingSoundAtom,
   toastMessageAtom,
@@ -24,14 +23,14 @@ import {
   requestNotificationPermissions,
   sendTimerFinishedNotification,
 } from "@/utils/notifications";
+import { clampDurationMs } from "@/utils/timeUtils";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 export default function PomodoroTimer() {
-  const stepMinutes = useAtomValue(stepMinutesAtom);
-  const [durationMinutes, setDurationMinutes] = useAtom(durationMinutesAtom);
+  const [durationMs, setDurationMs] = useAtom(durationMsAtom);
   const [isActive, setIsActive] = useAtom(isActiveAtom);
   const [targetEndTime, setTargetEndTime] = useAtom(targetEndTimeAtom);
   const [remainingTime, setRemainingTime] = useAtom(remainingTimeAtom);
@@ -40,7 +39,7 @@ export default function PomodoroTimer() {
   const endSound = useAtomValue(endSoundAtom);
   const setToastMessage = useSetAtom(toastMessageAtom);
 
-  const [timeLeftMs, setTimeLeftMs] = useState(durationMinutes * 60 * 1000);
+  const [timeLeftMs, setTimeLeftMs] = useState(durationMs);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const completingRef = useRef(false);
   const lastTickSecondRef = useRef<number | null>(null);
@@ -64,7 +63,7 @@ export default function PomodoroTimer() {
     setIsActive(false);
     setTargetEndTime(null);
     setRemainingTime(null);
-    setTimeLeftMs(durationMinutes * 60 * 1000);
+    setTimeLeftMs(durationMs);
     lastTickSecondRef.current = null;
 
     try {
@@ -81,7 +80,7 @@ export default function PomodoroTimer() {
 
     completingRef.current = false;
   }, [
-    durationMinutes,
+    durationMs,
     endSound,
     hapticsEnabled,
     setIsActive,
@@ -100,7 +99,7 @@ export default function PomodoroTimer() {
     } else if (remainingTime !== null) {
       setTimeLeftMs(remainingTime);
     } else {
-      setTimeLeftMs(durationMinutes * 60 * 1000);
+      setTimeLeftMs(durationMs);
     }
 
     void requestNotificationPermissions();
@@ -109,9 +108,9 @@ export default function PomodoroTimer() {
 
   useEffect(() => {
     if (!isActive && remainingTime === null) {
-      setTimeLeftMs(durationMinutes * 60 * 1000);
+      setTimeLeftMs(durationMs);
     }
-  }, [durationMinutes, isActive, remainingTime]);
+  }, [durationMs, isActive, remainingTime]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
@@ -153,53 +152,23 @@ export default function PomodoroTimer() {
     };
   }, [handleTimerComplete, isActive, targetEndTime, tickingSound]);
 
-  const adjustTime = useCallback(
-    (direction: "increment" | "decrement") => {
-      if (isActive) {
-        setToastMessage("Pause first to change the time");
-        return;
-      }
-
-      let newDuration = durationMinutes;
-
-      if (direction === "increment") {
-        if (durationMinutes + stepMinutes > 60) {
-          setToastMessage("Max is 60 minutes");
-          return;
-        }
-        newDuration = Math.min(60, durationMinutes + stepMinutes);
-      } else {
-        if (durationMinutes - stepMinutes < stepMinutes) {
-          setToastMessage(`Min is ${stepMinutes} minutes`);
-          return;
-        }
-        newDuration = Math.max(stepMinutes, durationMinutes - stepMinutes);
-      }
-
-      haptic("light");
-      setDurationMinutes(newDuration);
+  const setDurationFromPicker = useCallback(
+    (milliseconds: number) => {
+      if (isActive) return;
+      const next = clampDurationMs(milliseconds);
+      setDurationMs(next);
       setRemainingTime(null);
       setTargetEndTime(null);
-      setTimeLeftMs(newDuration * 60 * 1000);
+      setTimeLeftMs(next);
     },
-    [
-      durationMinutes,
-      haptic,
-      isActive,
-      setDurationMinutes,
-      setRemainingTime,
-      setTargetEndTime,
-      setToastMessage,
-      stepMinutes,
-    ],
+    [isActive, setDurationMs, setRemainingTime, setTargetEndTime],
   );
 
   const toggleTimer = useCallback(() => {
     haptic("medium");
 
     if (!isActive) {
-      const duration =
-        remainingTime !== null ? remainingTime : durationMinutes * 60 * 1000;
+      const duration = remainingTime !== null ? remainingTime : durationMs;
       const target = Date.now() + duration;
 
       setTargetEndTime(target);
@@ -218,7 +187,7 @@ export default function PomodoroTimer() {
       deactivateKeepAwake("timo-timer").catch(() => undefined);
     }
   }, [
-    durationMinutes,
+    durationMs,
     haptic,
     isActive,
     remainingTime,
@@ -233,12 +202,12 @@ export default function PomodoroTimer() {
     setIsActive(false);
     setTargetEndTime(null);
     setRemainingTime(null);
-    setTimeLeftMs(durationMinutes * 60 * 1000);
+    setTimeLeftMs(durationMs);
     lastTickSecondRef.current = null;
     deactivateKeepAwake("timo-timer").catch(() => undefined);
     setToastMessage("Reset");
   }, [
-    durationMinutes,
+    durationMs,
     haptic,
     setIsActive,
     setRemainingTime,
@@ -257,11 +226,13 @@ export default function PomodoroTimer() {
         enabled={!isSettingsOpen}
         onTap={toggleTimer}
         onLongPress={resetTimer}
-        onSwipeUp={() => adjustTime("increment")}
-        onSwipeDown={() => adjustTime("decrement")}
         onSwipeHorizontal={toggleSettings}
       >
-        <TimerDisplay timeLeftMs={timeLeftMs} />
+        <TimerDisplay
+          timeLeftMs={timeLeftMs}
+          editable={!isActive}
+          onDurationChange={setDurationFromPicker}
+        />
       </GestureSurface>
 
       <BottomControls

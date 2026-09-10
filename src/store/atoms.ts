@@ -24,15 +24,9 @@ export const fontSizePercentAtom = atomWithStorage<number>(
   storage,
 );
 
-export const stepMinutesAtom = atomWithStorage<number>(
-  "pomodoro-step-minutes",
-  5,
-  storage,
-);
-
-export const durationMinutesAtom = atomWithStorage<number>(
-  "pomodoro-duration-minutes",
-  25,
+export const durationMsAtom = atomWithStorage<number>(
+  "pomodoro-duration-ms",
+  25 * 60 * 1000,
   storage,
 );
 

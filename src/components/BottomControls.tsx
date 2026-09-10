@@ -71,7 +71,7 @@ export default function BottomControls({
               { color: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" },
             ]}
           >
-            Tap to start · Swipe ↕ time · Hold reset · Swipe ↔ menu
+            Tap to start · Scroll time · Hold reset
           </Text>
         </View>
       ) : null}

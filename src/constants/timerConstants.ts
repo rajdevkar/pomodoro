@@ -15,8 +15,6 @@ export const fontFamilies = [
   "Orbitron_700Bold",
 ];
 
-export const stepOptions = [1, 5, 10, 15];
-
 export const endSoundOptions = [
   { id: "off", label: "Off" },
   { id: "melody", label: "Melody" },

@@ -1,11 +1,9 @@
-import { endSoundOptions, fontNames, stepOptions, tickSoundOptions } from "@/constants/timerConstants";
+import { endSoundOptions, fontNames, tickSoundOptions } from "@/constants/timerConstants";
 import {
-  durationMinutesAtom,
   endSoundAtom,
   fontIndexAtom,
   fontSizePercentAtom,
   hapticsEnabledAtom,
-  stepMinutesAtom,
   themeAtom,
   tickingSoundAtom,
 } from "@/store/atoms";
@@ -90,8 +88,6 @@ export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps)
   const [theme, setTheme] = useAtom(themeAtom);
   const [fontIndex, setFontIndex] = useAtom(fontIndexAtom);
   const [fontSizePercent, setFontSizePercent] = useAtom(fontSizePercentAtom);
-  const [stepMinutes, setStepMinutes] = useAtom(stepMinutesAtom);
-  const [durationMinutes, setDurationMinutes] = useAtom(durationMinutesAtom);
   const [hapticsEnabled, setHapticsEnabled] = useAtom(hapticsEnabledAtom);
   const [tickingSound, setTickingSound] = useAtom(tickingSoundAtom);
   const [endSound, setEndSound] = useAtom(endSoundAtom);
@@ -212,51 +208,6 @@ export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps)
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.content}
           >
-            <GroupHeader title="Timer" isDark={isDark} />
-            <Group isDark={isDark}>
-              <View style={styles.rowBlock}>
-                <Text style={[styles.rowLabel, { color: labelColor }]}>
-                  Step
-                </Text>
-                {renderSegment(
-                  stepOptions.map((step) => ({
-                    id: String(step),
-                    label: `${step} min`,
-                  })),
-                  String(stepMinutes),
-                  (id) => withHaptic(() => setStepMinutes(Number(id))),
-                )}
-              </View>
-              <RowDivider isDark={isDark} />
-              <View style={styles.rowBlock}>
-                <View style={styles.rowBetween}>
-                  <Text style={[styles.rowLabel, { color: labelColor }]}>
-                    Duration
-                  </Text>
-                  <Text style={[styles.rowValue, { color: secondaryColor }]}>
-                    {durationMinutes} min
-                  </Text>
-                </View>
-                <Slider
-                  minimumValue={1}
-                  maximumValue={60}
-                  step={1}
-                  value={durationMinutes}
-                  onValueChange={(value) =>
-                    setDurationMinutes(Math.round(value))
-                  }
-                  onSlidingComplete={() => {
-                    if (hapticsEnabled) void triggerLightHaptic();
-                  }}
-                  minimumTrackTintColor={accent}
-                  maximumTrackTintColor={
-                    isDark ? "rgba(120,120,128,0.36)" : "rgba(120,120,128,0.2)"
-                  }
-                  thumbTintColor="#ffffff"
-                />
-              </View>
-            </Group>
-
             <GroupHeader title="Feedback & Sound" isDark={isDark} />
             <Group isDark={isDark}>
               <View style={styles.rowBlock}>
@@ -393,9 +344,8 @@ export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps)
                 {(
                   [
                     ["Tap", "Play or pause"],
-                    ["Swipe up / down", "Change duration"],
+                    ["Scroll minutes / seconds", "Set duration"],
                     ["Hold", "Reset"],
-                    ["Swipe sideways", "Open settings"],
                   ] as const
                 ).map(([gesture, action], index, list) => (
                   <React.Fragment key={gesture}>
