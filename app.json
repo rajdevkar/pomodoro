@@ -43,7 +43,8 @@
           "color": "#000000",
           "sounds": []
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "extra": {
       "eas": {

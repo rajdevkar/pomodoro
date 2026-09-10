@@ -1,5 +1,10 @@
+import {
+  createAudioPlayer,
+  setAudioModeAsync,
+  type AudioPlayer,
+} from "expo-audio";
 import * as FileSystem from "expo-file-system/legacy";
-import { NativeModules, Platform } from "react-native";
+import { Platform } from "react-native";
 
 export type EndSoundId = "off" | "melody" | "chime" | "bell" | "beep";
 export type TickSoundId = "off" | "soft" | "click" | "wood";
@@ -141,30 +146,20 @@ function playWebNotes(notes: Note[]) {
 }
 
 const soundUriCache = new Map<string, string>();
+const playerCache = new Map<string, AudioPlayer>();
 
-type ExpoAvModule = typeof import("expo-av");
-type NativeSound = import("expo-av").Audio.Sound;
+let audioModeReady = false;
+let audioUnavailable = false;
 
-let audioModule: ExpoAvModule | null | undefined;
-let activeSound: NativeSound | null = null;
-
-async function getAudio() {
-  if (Platform.OS === "web") return null;
-  if (audioModule !== undefined) return audioModule;
-
-  // Avoid importing expo-av when the native module is missing — that throws hard.
-  if (!NativeModules.ExponentAV) {
-    audioModule = null;
-    return null;
-  }
-
-  try {
-    audioModule = await import("expo-av");
-  } catch {
-    audioModule = null;
-  }
-
-  return audioModule;
+async function ensureAudioMode() {
+  if (audioModeReady || audioUnavailable) return;
+  await setAudioModeAsync({
+    playsInSilentMode: true,
+    allowsRecording: false,
+    shouldPlayInBackground: false,
+    interruptionMode: "mixWithOthers",
+  });
+  audioModeReady = true;
 }
 
 async function ensureSoundFile(
@@ -187,39 +182,23 @@ async function ensureSoundFile(
 }
 
 async function playNativeNotes(cacheKey: string, notes: Note[]) {
-  const expoAv = await getAudio();
-  if (!expoAv) return;
+  if (audioUnavailable) return;
 
-  const { Audio } = expoAv;
-
-  await Audio.setAudioModeAsync({
-    playsInSilentModeIOS: true,
-    allowsRecordingIOS: false,
-    staysActiveInBackground: false,
-    shouldDuckAndroid: true,
-    playThroughEarpieceAndroid: false,
-  });
+  await ensureAudioMode();
 
   const uri = await ensureSoundFile(cacheKey, notes);
   if (!uri) return;
 
-  if (activeSound) {
-    await activeSound.unloadAsync().catch(() => undefined);
-    activeSound = null;
+  let player = playerCache.get(cacheKey);
+  if (!player) {
+    player = createAudioPlayer({ uri });
+    player.volume = 1;
+    playerCache.set(cacheKey, player);
+  } else {
+    await player.seekTo(0);
   }
 
-  const { sound } = await Audio.Sound.createAsync(
-    { uri },
-    { shouldPlay: true, volume: 1 },
-  );
-  activeSound = sound;
-
-  sound.setOnPlaybackStatusUpdate((status) => {
-    if (status.isLoaded && status.didJustFinish) {
-      sound.unloadAsync().catch(() => undefined);
-      if (activeSound === sound) activeSound = null;
-    }
-  });
+  player.play();
 }
 
 async function playNotes(cacheKey: string, notes: Note[]) {
@@ -230,8 +209,8 @@ async function playNotes(cacheKey: string, notes: Note[]) {
     }
     await playNativeNotes(cacheKey, notes);
   } catch {
-    // Native audio module missing or playback failed — keep the timer usable.
-    audioModule = null;
+    // Native audio missing or playback failed — keep the timer usable.
+    audioUnavailable = true;
   }
 }
 
