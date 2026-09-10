@@ -3,8 +3,19 @@ import { Platform } from "react-native";
 type HapticsModule = typeof import("expo-haptics");
 
 let hapticsModule: HapticsModule | null | undefined;
+let hapticsAllowed = true;
+
+/** Keep in sync with the Touch feedback setting. */
+export function setHapticsAllowed(enabled: boolean) {
+  hapticsAllowed = enabled;
+}
+
+export function getHapticsAllowed() {
+  return hapticsAllowed;
+}
 
 async function getHaptics() {
+  if (!hapticsAllowed) return null;
   if (Platform.OS === "web") return null;
   if (hapticsModule !== undefined) return hapticsModule;
 

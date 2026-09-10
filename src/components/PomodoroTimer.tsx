@@ -17,8 +17,8 @@ import { playEndSound, playTickSound } from "@/utils/audioUtils";
 import {
   triggerLightHaptic,
   triggerMediumHaptic,
-  triggerSelectionHaptic,
   triggerSuccessHaptic,
+  setHapticsAllowed,
 } from "@/utils/haptics";
 import {
   requestNotificationPermissions,
@@ -90,6 +90,10 @@ export default function PomodoroTimer() {
   ]);
 
   useEffect(() => {
+    setHapticsAllowed(hapticsEnabled);
+  }, [hapticsEnabled]);
+
+  useEffect(() => {
     if (isActive && targetEndTime) {
       const remaining = Math.max(0, targetEndTime - Date.now());
       setTimeLeftMs(remaining);
@@ -104,7 +108,6 @@ export default function PomodoroTimer() {
     }
 
     void requestNotificationPermissions();
-    void triggerSelectionHaptic();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

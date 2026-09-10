@@ -9,7 +9,7 @@ import {
 } from "@/store/atoms";
 import type { EndSoundId, TickSoundId } from "@/utils/audioUtils";
 import { playEndSound, playTickSound } from "@/utils/audioUtils";
-import { triggerLightHaptic } from "@/utils/haptics";
+import { setHapticsAllowed, triggerLightHaptic } from "@/utils/haptics";
 import Slider from "@react-native-community/slider";
 import { useAtom } from "jotai";
 import React, { useEffect } from "react";
@@ -227,6 +227,7 @@ export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps)
                   hapticsEnabled ? "on" : "off",
                   (id) => {
                     const next = id === "on";
+                    setHapticsAllowed(next);
                     setHapticsEnabled(next);
                     if (next) void triggerLightHaptic();
                   },
