@@ -4,19 +4,15 @@ import { useAtomValue } from "jotai";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import CloseIcon from "./icons/CloseIcon";
 import SettingsIcon from "./icons/SettingsIcon";
-import SettingsControl from "./SettingsControl";
 
 interface BottomControlsProps {
-  onSettingsToggle: () => void;
-  isSettingsOpen: boolean;
+  onOpenSettings: () => void;
   showGestureHint?: boolean;
 }
 
 export default function BottomControls({
-  onSettingsToggle,
-  isSettingsOpen,
+  onOpenSettings,
   showGestureHint = true,
 }: BottomControlsProps) {
   const theme = useAtomValue(themeAtom);
@@ -27,7 +23,7 @@ export default function BottomControls({
 
   const openSettings = () => {
     if (hapticsEnabled) void triggerLightHaptic();
-    onSettingsToggle();
+    onOpenSettings();
   };
 
   return (
@@ -58,21 +54,15 @@ export default function BottomControls({
           styles.button,
           {
             backgroundColor: isDark
-              ? "rgba(255,255,255,0.1)"
-              : "rgba(0,0,0,0.05)",
+              ? "rgba(255,255,255,0.12)"
+              : "rgba(0,0,0,0.06)",
             opacity: pressed ? 0.75 : 1,
             transform: [{ scale: pressed ? 0.95 : 1 }],
           },
         ]}
       >
-        {isSettingsOpen ? (
-          <CloseIcon color={iconColor} />
-        ) : (
-          <SettingsIcon color={iconColor} />
-        )}
+        <SettingsIcon color={iconColor} />
       </Pressable>
-
-      <SettingsControl isOpen={isSettingsOpen} onClose={onSettingsToggle} />
     </View>
   );
 }
