@@ -5,7 +5,8 @@ const FONT_METRICS = {
   digitWidth: 1.34,
   rowHeight: 1.2,
   sizeScale: 1,
-  colonWidth: 0.42,
+  /** Gap between minute and second columns; colon dots are centered in this. */
+  colonWidth: 0.5,
   baselineNudge: 0,
 } as const;
 

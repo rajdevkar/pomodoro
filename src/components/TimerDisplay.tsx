@@ -31,6 +31,8 @@ export default function TimerDisplay({
   const { minutes, seconds } = splitTime(timeLeftMs);
   const wheelHeight = itemHeight * 3;
   const stageWidth = columnWidth * 2 + colonWidth;
+  const colonDot = Math.max(3, Math.round(fontSize * 0.14));
+  const colonGap = Math.max(4, Math.round(fontSize * 0.16));
 
   useEffect(() => {
     if (!isActive) {
@@ -115,7 +117,7 @@ export default function TimerDisplay({
           onChange={(nextSeconds) => applyParts(minutes, nextSeconds)}
         />
 
-        <View
+        <Animated.View
           pointerEvents="none"
           style={[
             styles.colonSlot,
@@ -124,28 +126,35 @@ export default function TimerDisplay({
               height: itemHeight,
               top: itemHeight,
               left: columnWidth,
+              opacity: colonOpacity,
+              transform: [{ translateY: baselineNudge }],
             },
           ]}
         >
-          <Animated.Text
-            numberOfLines={1}
+          <View
             style={[
-              styles.colon,
+              styles.colonDot,
               {
-                color,
-                fontSize,
-                fontFamily: timerFontFamily,
-                width: colonWidth,
-                height: itemHeight,
-                lineHeight: itemHeight,
-                opacity: colonOpacity,
-                transform: [{ translateY: baselineNudge }],
+                width: colonDot,
+                height: colonDot,
+                borderRadius: colonDot / 2,
+                backgroundColor: color,
+                marginBottom: colonGap,
               },
             ]}
-          >
-            :
-          </Animated.Text>
-        </View>
+          />
+          <View
+            style={[
+              styles.colonDot,
+              {
+                width: colonDot,
+                height: colonDot,
+                borderRadius: colonDot / 2,
+                backgroundColor: color,
+              },
+            ]}
+          />
+        </Animated.View>
       </View>
     </View>
   );
@@ -173,9 +182,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 2,
   },
-  colon: {
-    textAlign: "center",
-    includeFontPadding: false,
-    textAlignVertical: "center",
-  },
+  colonDot: {},
 });

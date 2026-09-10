@@ -325,5 +325,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     includeFontPadding: false,
     textAlignVertical: "center",
+    fontVariant: ["tabular-nums"],
   },
 });
