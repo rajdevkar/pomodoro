@@ -31,19 +31,14 @@ export default function TimerDisplay({
   const colonOpacity = useRef(new Animated.Value(1)).current;
 
   const { height, width } = Dimensions.get("window");
-  const {
-    fontSize,
-    itemHeight,
-    columnWidth,
-    colonWidth,
-    neighborStride,
-    baselineNudge,
-  } = timerLayout(fontIndex, width, height, fontSizePercent);
+  const { fontSize, itemHeight, columnWidth, colonWidth, baselineNudge } =
+    timerLayout(fontIndex, width, height, fontSizePercent);
 
   const isDark = theme === "dark";
   const family = fontFamilies[fontIndex] ?? fontFamilies[0];
   const color = isDark ? "#ffffff" : "#000000";
   const { minutes, seconds } = splitTime(timeLeftMs);
+  const wheelHeight = itemHeight * 3;
 
   useEffect(() => {
     if (!isActive) {
@@ -81,19 +76,23 @@ export default function TimerDisplay({
         { backgroundColor: isDark ? "#000000" : "#ffffff" },
       ]}
     >
-      <View
-        style={[
-          styles.pill,
-          {
-            minHeight: itemHeight + 36,
-            paddingHorizontal: Math.round(fontSize * 0.42),
-            backgroundColor: isDark
-              ? "rgba(255,255,255,0.07)"
-              : "rgba(0,0,0,0.05)",
-          },
-        ]}
-      >
-        <View style={[styles.stage, { height: itemHeight }]}>
+      <View style={[styles.stage, { height: wheelHeight }]}>
+        <View
+          pointerEvents="none"
+          style={[
+            styles.selection,
+            {
+              height: itemHeight,
+              top: itemHeight,
+              left: -Math.round(fontSize * 0.28),
+              right: -Math.round(fontSize * 0.28),
+              backgroundColor: isDark
+                ? "rgba(255,255,255,0.07)"
+                : "rgba(0,0,0,0.05)",
+            },
+          ]}
+        />
+
         <TimeColumn
           value={minutes}
           min={0}
@@ -103,13 +102,12 @@ export default function TimerDisplay({
           columnWidth={columnWidth}
           fontSize={fontSize}
           fontFamily={family}
-          neighborStride={neighborStride}
           baselineNudge={baselineNudge}
           color={color}
           hapticsEnabled={hapticsEnabled}
           onChange={(nextMinutes) => applyParts(nextMinutes, seconds)}
         />
-        <View style={[styles.colonSlot, { width: colonWidth, height: itemHeight }]}>
+        <View style={[styles.colonSlot, { width: colonWidth, height: wheelHeight }]}>
           <Animated.Text
             numberOfLines={1}
             style={[
@@ -118,6 +116,8 @@ export default function TimerDisplay({
                 color,
                 fontSize,
                 fontFamily: family,
+                height: itemHeight,
+                lineHeight: itemHeight,
                 opacity: colonOpacity,
                 transform: [{ translateY: baselineNudge }],
               },
@@ -135,13 +135,11 @@ export default function TimerDisplay({
           columnWidth={columnWidth}
           fontSize={fontSize}
           fontFamily={family}
-          neighborStride={neighborStride}
           baselineNudge={baselineNudge}
           color={color}
           hapticsEnabled={hapticsEnabled}
           onChange={(nextSeconds) => applyParts(minutes, nextSeconds)}
         />
-        </View>
       </View>
     </View>
   );
@@ -153,18 +151,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  pill: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 28,
-    paddingVertical: 18,
-    overflow: "visible",
-  },
   stage: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     overflow: "visible",
+  },
+  selection: {
+    position: "absolute",
+    borderRadius: 28,
   },
   colonSlot: {
     alignItems: "center",

@@ -28,6 +28,7 @@ export default function GestureSurface({
     const tap = Gesture.Tap()
       .runOnJS(true)
       .maxDuration(250)
+      .maxDistance(10)
       .onEnd((_event, success) => {
         if (success) onTap();
       });

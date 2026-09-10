@@ -1,10 +1,9 @@
 import { triggerSelectionHaptic } from "@/utils/haptics";
 import { pad2 } from "@/utils/timeUtils";
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, StyleSheet, View } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-
-const STRIP_RANGE = 1;
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import { StyleSheet, Text, View, type NativeSyntheticEvent } from "react-native";
+import { FlatList } from "react-native-gesture-handler";
+import type { NativeScrollEvent } from "react-native";
 
 interface TimeColumnProps {
   value: number;
@@ -15,7 +14,6 @@ interface TimeColumnProps {
   columnWidth: number;
   fontSize: number;
   fontFamily: string;
-  neighborStride: number;
   baselineNudge: number;
   color: string;
   hapticsEnabled: boolean;
@@ -31,187 +29,172 @@ export default function TimeColumn({
   columnWidth,
   fontSize,
   fontFamily,
-  neighborStride,
   baselineNudge,
   color,
   hapticsEnabled,
   onChange,
 }: TimeColumnProps) {
-  const slotHeight = neighborStride;
-  const translateY = useRef(new Animated.Value(0)).current;
-  const startValueRef = useRef(value);
-  const baseValueRef = useRef(value);
-  const [baseValue, setBaseValue] = useState(value);
+  const listRef = useRef<FlatList<number>>(null);
+  const lastIndexRef = useRef(value - min);
+  const data = useMemo(() => {
+    const items: number[] = [];
+    for (let item = min; item <= max; item += 1) {
+      items.push(item);
+    }
+    return items;
+  }, [max, min]);
+
+  const indexForValue = useCallback(
+    (next: number) => Math.max(0, Math.min(data.length - 1, next - min)),
+    [data.length, min],
+  );
+
+  const scrollToValue = useCallback(
+    (next: number, animated: boolean) => {
+      const index = indexForValue(next);
+      lastIndexRef.current = index;
+      listRef.current?.scrollToOffset({
+        offset: index * itemHeight,
+        animated,
+      });
+    },
+    [indexForValue, itemHeight],
+  );
 
   useEffect(() => {
-    startValueRef.current = value;
-    baseValueRef.current = value;
-    setBaseValue(value);
-    translateY.setValue(0);
-  }, [translateY, value]);
+    scrollToValue(value, false);
+  }, [scrollToValue, value]);
 
-  const clamp = (next: number) => Math.min(max, Math.max(min, next));
-
-  const clampOffset = (offset: number, origin: number) => {
-    const maxDrag = (origin - min) * slotHeight;
-    const minDrag = (origin - max) * slotHeight;
-    return Math.min(maxDrag, Math.max(minDrag, offset));
+  const valueFromOffset = (offsetY: number) => {
+    const index = Math.round(offsetY / itemHeight);
+    return data[Math.max(0, Math.min(data.length - 1, index))] ?? min;
   };
 
-  const nearestStep = (offset: number) => Math.round(-offset / slotHeight);
-
-  const moveStrip = (translationY: number) => {
-    const origin = startValueRef.current;
-    const offset = clampOffset(translationY, origin);
-    const nextBase = clamp(origin + nearestStep(offset));
-    const remainder = offset + (nextBase - origin) * slotHeight;
-    translateY.setValue(remainder);
-
-    if (nextBase !== baseValueRef.current) {
-      baseValueRef.current = nextBase;
-      setBaseValue(nextBase);
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (!enabled) return;
+    const next = valueFromOffset(event.nativeEvent.contentOffset.y);
+    const index = indexForValue(next);
+    if (index !== lastIndexRef.current) {
+      lastIndexRef.current = index;
       if (hapticsEnabled) void triggerSelectionHaptic();
     }
   };
 
-  const gesture = Gesture.Pan()
-    .enabled(enabled)
-    .activeOffsetY([-4, 4])
-    .failOffsetX([-36, 36])
-    .runOnJS(true)
-    .onBegin(() => {
-      startValueRef.current = baseValueRef.current;
-    })
-    .onUpdate((event) => {
-      moveStrip(event.translationY);
-    })
-    .onEnd((event) => {
-      const origin = startValueRef.current;
-      const projected = clampOffset(
-        event.translationY + event.velocityY * 0.16,
-        origin,
-      );
-      const next = clamp(origin + nearestStep(projected));
-      const remainder =
-        clampOffset(event.translationY, origin) + (next - origin) * slotHeight;
+  const commitOffset = (offsetY: number) => {
+    if (!enabled) return;
+    const next = valueFromOffset(offsetY);
+    if (next !== value) {
+      onChange(next);
+    } else {
+      scrollToValue(next, true);
+    }
+  };
 
-      baseValueRef.current = next;
-      setBaseValue(next);
-      translateY.setValue(remainder);
+  const renderItem = ({ item }: { item: number }) => (
+    <View style={[styles.row, { height: itemHeight, width: columnWidth }]}>
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.digit,
+          {
+            color,
+            fontSize,
+            fontFamily,
+            lineHeight: itemHeight,
+            transform: [{ translateY: baselineNudge }],
+          },
+        ]}
+      >
+        {pad2(item)}
+      </Text>
+    </View>
+  );
 
-      Animated.spring(translateY, {
-        toValue: 0,
-        damping: 22,
-        stiffness: 280,
-        mass: 0.7,
-        useNativeDriver: true,
-      }).start(({ finished }) => {
-        if (!finished) return;
-        startValueRef.current = next;
-        onChange(next);
-      });
-    });
-
-  const items = useMemo(() => {
-    const offsets = enabled
-      ? Array.from({ length: STRIP_RANGE * 2 + 1 }, (_, index) => index - STRIP_RANGE)
-      : [0];
-
-    return offsets
-      .map((offset) => ({ offset, itemValue: baseValue + offset }))
-      .filter(({ itemValue }) => itemValue >= min && itemValue <= max);
-  }, [baseValue, enabled, max, min]);
-
-  const windowHeight = slotHeight * 3;
-
-  return (
-    <GestureDetector gesture={gesture}>
-      <View style={[styles.column, { width: columnWidth, height: itemHeight }]}>
-        <View
-          pointerEvents="none"
-          style={[
-            styles.window,
-            {
-              height: windowHeight,
-              top: (itemHeight - windowHeight) / 2,
-            },
-          ]}
-        >
-          {items.map(({ offset, itemValue }) => {
-            const centerAt = -offset * slotHeight;
-            return (
-              <Animated.Text
-                key={itemValue}
-                numberOfLines={1}
-                style={[
-                  styles.digit,
-                  {
-                    color,
-                    fontSize,
-                    fontFamily,
-                    width: columnWidth,
-                    height: slotHeight,
-                    top: slotHeight,
-                    opacity: enabled
-                      ? translateY.interpolate({
-                          inputRange: [
-                            centerAt - slotHeight,
-                            centerAt,
-                            centerAt + slotHeight,
-                          ],
-                          outputRange: [0.28, 1, 0.28],
-                          extrapolate: "clamp",
-                        })
-                      : 1,
-                    transform: [
-                      {
-                        translateY: Animated.add(
-                          translateY,
-                          offset * slotHeight + baselineNudge,
-                        ),
-                      },
-                      {
-                        scale: enabled
-                          ? translateY.interpolate({
-                              inputRange: [
-                                centerAt - slotHeight,
-                                centerAt,
-                                centerAt + slotHeight,
-                              ],
-                              outputRange: [0.38, 1, 0.38],
-                              extrapolate: "clamp",
-                            })
-                          : 1,
-                      },
-                    ],
-                  },
-                ]}
-              >
-                {pad2(itemValue)}
-              </Animated.Text>
-            );
-          })}
+  if (!enabled) {
+    return (
+      <View
+        style={[
+          styles.column,
+          styles.centered,
+          { width: columnWidth, height: itemHeight * 3 },
+        ]}
+      >
+        <View style={[styles.row, { height: itemHeight, width: columnWidth }]}>
+          <Text
+            numberOfLines={1}
+            style={[
+              styles.digit,
+              {
+                color,
+                fontSize,
+                fontFamily,
+                lineHeight: itemHeight,
+                transform: [{ translateY: baselineNudge }],
+              },
+            ]}
+          >
+            {pad2(value)}
+          </Text>
         </View>
       </View>
-    </GestureDetector>
+    );
+  }
+
+  return (
+    <View style={[styles.column, { width: columnWidth, height: itemHeight * 3 }]}>
+      <FlatList
+        ref={listRef}
+        data={data}
+        keyExtractor={(item) => String(item)}
+        renderItem={renderItem}
+        getItemLayout={(_, index) => ({
+          length: itemHeight,
+          offset: itemHeight * index,
+          index,
+        })}
+        scrollEnabled={enabled}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={itemHeight}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        disableIntervalMomentum
+        nestedScrollEnabled
+        scrollEventThrottle={16}
+        onScroll={handleScroll}
+        onMomentumScrollEnd={(event) =>
+          commitOffset(event.nativeEvent.contentOffset.y)
+        }
+        onScrollEndDrag={(event) => {
+          if (event.nativeEvent.velocity?.y === 0) {
+            commitOffset(event.nativeEvent.contentOffset.y);
+          }
+        }}
+        onLayout={() => scrollToValue(value, false)}
+        contentContainerStyle={{ paddingVertical: itemHeight }}
+        style={styles.list}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   column: {
-    overflow: "visible",
+    overflow: "hidden",
+  },
+  centered: {
     alignItems: "center",
     justifyContent: "center",
   },
-  window: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    overflow: "hidden",
+  list: {
+    flexGrow: 0,
+    height: "100%",
+  },
+  row: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   digit: {
-    position: "absolute",
-    left: 0,
+    width: "100%",
     textAlign: "center",
     includeFontPadding: false,
     textAlignVertical: "center",
