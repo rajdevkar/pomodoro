@@ -233,7 +233,6 @@ export default function PomodoroTimer() {
           timeLeftMs={timeLeftMs}
           editable={!isActive}
           isActive={isActive}
-          isPaused={!isActive && remainingTime !== null}
           onDurationChange={setDurationFromPicker}
         />
       </GestureSurface>

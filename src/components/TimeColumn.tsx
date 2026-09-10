@@ -15,6 +15,7 @@ interface TimeColumnProps {
   fontFamily: string;
   neighborSize: number;
   neighborStride: number;
+  baselineNudge: number;
   color: string;
   hapticsEnabled: boolean;
   onChange: (value: number) => void;
@@ -31,6 +32,7 @@ export default function TimeColumn({
   fontFamily,
   neighborSize,
   neighborStride,
+  baselineNudge,
   color,
   hapticsEnabled,
   onChange,
@@ -156,6 +158,7 @@ export default function TimeColumn({
                   fontSize: neighborSize,
                   fontFamily,
                   opacity: visible ? 0.36 : 0,
+                  transform: [{ translateY: baselineNudge * 0.3 }],
                 },
               ]}
             >
@@ -167,7 +170,10 @@ export default function TimeColumn({
         <Animated.View
           style={[
             styles.center,
-            { height: itemHeight, transform: [{ translateY }] },
+            {
+              height: itemHeight,
+              transform: [{ translateY }],
+            },
           ]}
         >
           <Text
@@ -180,6 +186,7 @@ export default function TimeColumn({
                 color,
                 fontSize,
                 fontFamily,
+                transform: [{ translateY: baselineNudge }],
               },
             ]}
           >

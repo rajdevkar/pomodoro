@@ -15,13 +15,13 @@ export const fontFamilies = [
   "Orbitron_700Bold",
 ];
 
-/** Per-font digit box. Wide display faces need more width and a smaller size. */
+/** Per-font digit box. baselineNudge is a fraction of fontSize, positive shifts down. */
 export const fontMetrics = [
-  { digitWidth: 1.34, rowHeight: 1.2, sizeScale: 1, colonWidth: 0.34 },
-  { digitWidth: 1.34, rowHeight: 1.2, sizeScale: 1, colonWidth: 0.34 },
-  { digitWidth: 1.82, rowHeight: 1.34, sizeScale: 0.8, colonWidth: 0.4 },
-  { digitWidth: 1.42, rowHeight: 1.18, sizeScale: 1.05, colonWidth: 0.32 },
-  { digitWidth: 1.64, rowHeight: 1.22, sizeScale: 0.88, colonWidth: 0.36 },
+  { digitWidth: 1.34, rowHeight: 1.2, sizeScale: 1, colonWidth: 0.34, baselineNudge: 0 },
+  { digitWidth: 1.34, rowHeight: 1.2, sizeScale: 1, colonWidth: 0.34, baselineNudge: 0 },
+  { digitWidth: 1.52, rowHeight: 1.48, sizeScale: 0.78, colonWidth: 0.36, baselineNudge: 0.12 },
+  { digitWidth: 1.42, rowHeight: 1.18, sizeScale: 1.05, colonWidth: 0.32, baselineNudge: 0 },
+  { digitWidth: 1.64, rowHeight: 1.22, sizeScale: 0.88, colonWidth: 0.36, baselineNudge: 0 },
 ] as const;
 
 export function timerLayout(
@@ -52,10 +52,6 @@ export function timerLayout(
 
   const neighborSize = Math.round(fontSize * 0.3);
   const neighborStride = Math.round(itemHeight * 0.78 + neighborSize * 0.7);
-  const neighborBand = Math.max(
-    36,
-    neighborStride - itemHeight / 2 + neighborSize * 0.7 + 12,
-  );
 
   return {
     fontSize,
@@ -65,7 +61,7 @@ export function timerLayout(
     timeWidth: columnWidth * 2 + colonWidth,
     neighborSize,
     neighborStride,
-    neighborBand,
+    baselineNudge: Math.round(fontSize * metrics.baselineNudge),
   };
 }
 
