@@ -8,12 +8,14 @@ import SettingsIcon from "./icons/SettingsIcon";
 
 interface BottomControlsProps {
   onOpenSettings: () => void;
-  showGestureHint?: boolean;
+  isActive: boolean;
+  isPaused: boolean;
 }
 
 export default function BottomControls({
   onOpenSettings,
-  showGestureHint = true,
+  isActive,
+  isPaused,
 }: BottomControlsProps) {
   const theme = useAtomValue(themeAtom);
   const hapticsEnabled = useAtomValue(hapticsEnabledAtom);
@@ -25,6 +27,12 @@ export default function BottomControls({
     if (hapticsEnabled) void triggerLightHaptic();
     onOpenSettings();
   };
+
+  const hint = isActive
+    ? "Tap to pause"
+    : isPaused
+      ? "Tap to resume · Hold to reset"
+      : "Scroll to set · Tap to start";
 
   return (
     <>
@@ -44,8 +52,8 @@ export default function BottomControls({
             styles.button,
             {
               backgroundColor: isDark
-                ? "rgba(255,255,255,0.12)"
-                : "rgba(0,0,0,0.06)",
+                ? "rgba(255,255,255,0.1)"
+                : "rgba(0,0,0,0.05)",
               opacity: pressed ? 0.75 : 1,
               transform: [{ scale: pressed ? 0.95 : 1 }],
             },
@@ -55,26 +63,24 @@ export default function BottomControls({
         </Pressable>
       </View>
 
-      {showGestureHint ? (
-        <View
+      <View
+        style={[
+          styles.hintBar,
+          {
+            paddingBottom: Math.max(22, insets.bottom + 8),
+            pointerEvents: "none",
+          },
+        ]}
+      >
+        <Text
           style={[
-            styles.hintBar,
-            {
-              paddingBottom: Math.max(20, insets.bottom + 6),
-              pointerEvents: "none",
-            },
+            styles.hint,
+            { color: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.42)" },
           ]}
         >
-          <Text
-            style={[
-              styles.hint,
-              { color: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" },
-            ]}
-          >
-            Tap to start · Scroll time · Hold reset
-          </Text>
-        </View>
-      ) : null}
+          {hint}
+        </Text>
+      </View>
     </>
   );
 }
@@ -98,12 +104,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   hint: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "500",
-    letterSpacing: 0.1,
+    letterSpacing: 0.2,
     textAlign: "center",
-    paddingHorizontal: 16,
-    lineHeight: 16,
   },
   button: {
     width: 44,

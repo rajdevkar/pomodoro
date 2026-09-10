@@ -1,4 +1,4 @@
-import { triggerLightHaptic } from "@/utils/haptics";
+import { triggerSelectionHaptic } from "@/utils/haptics";
 import { pad2 } from "@/utils/timeUtils";
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
@@ -53,7 +53,7 @@ export default function TimeColumn({
     }
     Animated.timing(neighborOpacity, {
       toValue: 1,
-      duration: 140,
+      duration: 120,
       useNativeDriver: true,
     }).start();
   };
@@ -65,10 +65,10 @@ export default function TimeColumn({
     hideNeighborsTimer.current = setTimeout(() => {
       Animated.timing(neighborOpacity, {
         toValue: 0,
-        duration: 220,
+        duration: 260,
         useNativeDriver: true,
       }).start();
-    }, 320);
+    }, 420);
   };
 
   const setLiveValue = (next: number) => {
@@ -76,15 +76,15 @@ export default function TimeColumn({
     if (clamped !== displayValueRef.current) {
       displayValueRef.current = clamped;
       setDisplayValue(clamped);
-      if (hapticsEnabled) void triggerLightHaptic();
+      if (hapticsEnabled) void triggerSelectionHaptic();
     }
     return clamped;
   };
 
   const gesture = Gesture.Pan()
     .enabled(enabled)
-    .activeOffsetY([-6, 6])
-    .failOffsetX([-28, 28])
+    .activeOffsetY([-4, 4])
+    .failOffsetX([-36, 36])
     .runOnJS(true)
     .onBegin(() => {
       startValueRef.current = displayValueRef.current;
@@ -93,16 +93,21 @@ export default function TimeColumn({
     .onUpdate((event) => {
       const steps = Math.round(-event.translationY / itemHeight);
       const next = setLiveValue(startValueRef.current + steps);
-      const remainder = event.translationY + (next - startValueRef.current) * itemHeight;
+      const remainder =
+        event.translationY + (next - startValueRef.current) * itemHeight;
       translateY.setValue(remainder);
     })
-    .onEnd(() => {
+    .onEnd((event) => {
+      const flick = Math.round(-event.velocityY / 1600);
+      if (flick !== 0) {
+        setLiveValue(displayValueRef.current + flick);
+      }
       onChange(displayValueRef.current);
       Animated.spring(translateY, {
         toValue: 0,
-        damping: 18,
-        stiffness: 240,
-        mass: 0.7,
+        damping: 20,
+        stiffness: 260,
+        mass: 0.65,
         useNativeDriver: true,
       }).start();
       hideNeighborsSoon();
@@ -121,11 +126,18 @@ export default function TimeColumn({
   return (
     <GestureDetector gesture={gesture}>
       <View
-        style={[styles.column, { height: itemHeight * (NEIGHBORS * 2 + 1) }]}
+        style={[
+          styles.column,
+          {
+            height: itemHeight * (NEIGHBORS * 2 + 1),
+            minWidth: fontSize * 1.35,
+          },
+        ]}
       >
         <Animated.View style={{ transform: [{ translateY }] }}>
           {items.map(({ offset, itemValue, visible }) => {
             const isCenter = offset === 0;
+            const distance = Math.abs(offset);
             return (
               <Animated.View
                 key={`${offset}`}
@@ -140,9 +152,17 @@ export default function TimeColumn({
                     styles.text,
                     {
                       color,
-                      fontSize: isCenter ? fontSize : fontSize * 0.42,
+                      fontSize: isCenter
+                        ? fontSize
+                        : fontSize * (distance === 1 ? 0.38 : 0.28),
                       fontFamily,
-                      opacity: !visible ? 0 : isCenter ? 1 : 0.32,
+                      opacity: !visible
+                        ? 0
+                        : isCenter
+                          ? 1
+                          : distance === 1
+                            ? 0.38
+                            : 0.18,
                     },
                   ]}
                 >

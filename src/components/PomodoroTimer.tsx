@@ -17,6 +17,7 @@ import { playEndSound, playTickSound } from "@/utils/audioUtils";
 import {
   triggerLightHaptic,
   triggerMediumHaptic,
+  triggerSelectionHaptic,
   triggerSuccessHaptic,
 } from "@/utils/haptics";
 import {
@@ -103,6 +104,7 @@ export default function PomodoroTimer() {
     }
 
     void requestNotificationPermissions();
+    void triggerSelectionHaptic();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -230,13 +232,16 @@ export default function PomodoroTimer() {
         <TimerDisplay
           timeLeftMs={timeLeftMs}
           editable={!isActive}
+          isActive={isActive}
+          isPaused={!isActive && remainingTime !== null}
           onDurationChange={setDurationFromPicker}
         />
       </GestureSurface>
 
       <BottomControls
         onOpenSettings={toggleSettings}
-        showGestureHint={!isActive}
+        isActive={isActive}
+        isPaused={!isActive && remainingTime !== null}
       />
 
       <Toast />

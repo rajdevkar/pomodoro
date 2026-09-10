@@ -343,8 +343,8 @@ export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps)
               <View style={styles.rowBlock}>
                 {(
                   [
-                    ["Tap", "Play or pause"],
-                    ["Scroll minutes / seconds", "Set duration"],
+                    ["Tap", "Start, pause, or resume"],
+                    ["Scroll minutes or seconds", "Set the duration"],
                     ["Hold", "Reset"],
                   ] as const
                 ).map(([gesture, action], index, list) => (
