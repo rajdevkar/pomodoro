@@ -35,14 +35,16 @@ export default function TimerDisplay({
   const { height, width } = Dimensions.get("window");
   const fontSize = Math.min(
     Math.max((fontSizePercent / 100) * height * 0.2, 40),
-    width * 0.26,
+    width * 0.24,
   );
-  const itemHeight = Math.round(fontSize * 1.08);
+  const itemHeight = Math.round(fontSize * 0.98);
+  const columnWidth = Math.round(fontSize * 1.22);
+  const colonWidth = Math.round(fontSize * 0.42);
 
   const isDark = theme === "dark";
   const family = fontFamilies[fontIndex] ?? fontFamilies[0];
   const color = isDark ? "#ffffff" : "#000000";
-  const muted = isDark ? "rgba(255,255,255,0.42)" : "rgba(0,0,0,0.4)";
+  const muted = isDark ? "rgba(255,255,255,0.38)" : "rgba(0,0,0,0.38)";
   const { minutes, seconds } = splitTime(timeLeftMs);
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export default function TimerDisplay({
     const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(colonOpacity, {
-          toValue: 0.18,
+          toValue: 0.2,
           duration: 520,
           useNativeDriver: true,
         }),
@@ -83,42 +85,36 @@ export default function TimerDisplay({
         { backgroundColor: isDark ? "#000000" : "#ffffff" },
       ]}
     >
-      <Text style={[styles.status, { color: muted }]}>{status}</Text>
+      <View style={styles.cluster}>
+        <Text style={[styles.status, { color: muted }]}>{status}</Text>
 
-      <View style={styles.picker}>
-        <View
-          pointerEvents="none"
-          style={[
-            styles.selection,
-            {
-              height: itemHeight,
-              backgroundColor: isDark
-                ? "rgba(255,255,255,0.06)"
-                : "rgba(0,0,0,0.04)",
-              borderColor: isDark
-                ? "rgba(255,255,255,0.08)"
-                : "rgba(0,0,0,0.06)",
-            },
-          ]}
-        />
+        <View style={[styles.timeBlock, { height: itemHeight }]}>
+          <View
+            pointerEvents="none"
+            style={[
+              styles.selection,
+              {
+                height: itemHeight,
+                backgroundColor: isDark
+                  ? "rgba(255,255,255,0.07)"
+                  : "rgba(0,0,0,0.05)",
+              },
+            ]}
+          />
 
-        <View style={styles.row}>
-          <View style={styles.unit}>
-            <TimeColumn
-              value={minutes}
-              min={0}
-              max={60}
-              enabled={editable}
-              itemHeight={itemHeight}
-              fontSize={fontSize}
-              fontFamily={family}
-              color={color}
-              hapticsEnabled={hapticsEnabled}
-              onChange={(nextMinutes) => applyParts(nextMinutes, seconds)}
-            />
-            <Text style={[styles.unitLabel, { color: muted }]}>min</Text>
-          </View>
-
+          <TimeColumn
+            value={minutes}
+            min={0}
+            max={60}
+            enabled={editable}
+            itemHeight={itemHeight}
+            columnWidth={columnWidth}
+            fontSize={fontSize}
+            fontFamily={family}
+            color={color}
+            hapticsEnabled={hapticsEnabled}
+            onChange={(nextMinutes) => applyParts(nextMinutes, seconds)}
+          />
           <Animated.Text
             style={[
               styles.colon,
@@ -126,31 +122,38 @@ export default function TimerDisplay({
                 color,
                 fontSize,
                 fontFamily: family,
+                width: colonWidth,
                 height: itemHeight,
                 lineHeight: itemHeight,
                 opacity: colonOpacity,
-                marginBottom: 22,
               },
             ]}
           >
             :
           </Animated.Text>
+          <TimeColumn
+            value={seconds}
+            min={0}
+            max={minutes >= 60 ? 0 : 59}
+            enabled={editable}
+            itemHeight={itemHeight}
+            columnWidth={columnWidth}
+            fontSize={fontSize}
+            fontFamily={family}
+            color={color}
+            hapticsEnabled={hapticsEnabled}
+            onChange={(nextSeconds) => applyParts(minutes, nextSeconds)}
+          />
+        </View>
 
-          <View style={styles.unit}>
-            <TimeColumn
-              value={seconds}
-              min={0}
-              max={minutes >= 60 ? 0 : 59}
-              enabled={editable}
-              itemHeight={itemHeight}
-              fontSize={fontSize}
-              fontFamily={family}
-              color={color}
-              hapticsEnabled={hapticsEnabled}
-              onChange={(nextSeconds) => applyParts(minutes, nextSeconds)}
-            />
-            <Text style={[styles.unitLabel, { color: muted }]}>sec</Text>
-          </View>
+        <View style={styles.labels}>
+          <Text style={[styles.unitLabel, { width: columnWidth, color: muted }]}>
+            min
+          </Text>
+          <View style={{ width: colonWidth }} />
+          <Text style={[styles.unitLabel, { width: columnWidth, color: muted }]}>
+            sec
+          </Text>
         </View>
       </View>
     </View>
@@ -163,44 +166,45 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  status: {
-    fontSize: 13,
-    fontWeight: "600",
-    letterSpacing: 1.6,
-    textTransform: "uppercase",
-    marginBottom: 18,
-  },
-  picker: {
+  cluster: {
     alignItems: "center",
-    justifyContent: "center",
   },
-  selection: {
-    position: "absolute",
-    left: -18,
-    right: -18,
-    borderRadius: 22,
-    borderWidth: StyleSheet.hairlineWidth,
+  status: {
+    fontSize: 12,
+    fontWeight: "600",
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
+    marginBottom: 10,
   },
-  row: {
+  timeBlock: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "visible",
   },
-  unit: {
-    alignItems: "center",
-  },
-  unitLabel: {
-    marginTop: 8,
-    fontSize: 12,
-    fontWeight: "600",
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
+  selection: {
+    position: "absolute",
+    left: -14,
+    right: -14,
+    borderRadius: 20,
   },
   colon: {
-    letterSpacing: -2,
-    marginHorizontal: 6,
     textAlign: "center",
+    letterSpacing: 0,
     includeFontPadding: false,
     textAlignVertical: "center",
+  },
+  labels: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 6,
+  },
+  unitLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+    textAlign: "center",
   },
 });

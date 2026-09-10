@@ -4,14 +4,13 @@ import React, { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
-const NEIGHBORS = 2;
-
 interface TimeColumnProps {
   value: number;
   min: number;
   max: number;
   enabled: boolean;
   itemHeight: number;
+  columnWidth: number;
   fontSize: number;
   fontFamily: string;
   color: string;
@@ -25,6 +24,7 @@ export default function TimeColumn({
   max,
   enabled,
   itemHeight,
+  columnWidth,
   fontSize,
   fontFamily,
   color,
@@ -37,12 +37,22 @@ export default function TimeColumn({
   const startValueRef = useRef(value);
   const displayValueRef = useRef(value);
   const hideNeighborsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const neighborStep = Math.round(fontSize * 0.52);
 
   useEffect(() => {
     setDisplayValue(value);
     displayValueRef.current = value;
     translateY.setValue(0);
   }, [translateY, value]);
+
+  useEffect(() => {
+    if (!enabled) {
+      if (hideNeighborsTimer.current) {
+        clearTimeout(hideNeighborsTimer.current);
+      }
+      neighborOpacity.setValue(0);
+    }
+  }, [enabled, neighborOpacity]);
 
   const clamp = (next: number) => Math.min(max, Math.max(min, next));
 
@@ -53,7 +63,7 @@ export default function TimeColumn({
     }
     Animated.timing(neighborOpacity, {
       toValue: 1,
-      duration: 120,
+      duration: 100,
       useNativeDriver: true,
     }).start();
   };
@@ -65,10 +75,10 @@ export default function TimeColumn({
     hideNeighborsTimer.current = setTimeout(() => {
       Animated.timing(neighborOpacity, {
         toValue: 0,
-        duration: 260,
+        duration: 200,
         useNativeDriver: true,
       }).start();
-    }, 420);
+    }, 280);
   };
 
   const setLiveValue = (next: number) => {
@@ -91,10 +101,10 @@ export default function TimeColumn({
       showNeighbors();
     })
     .onUpdate((event) => {
-      const steps = Math.round(-event.translationY / itemHeight);
+      const steps = Math.round(-event.translationY / neighborStep);
       const next = setLiveValue(startValueRef.current + steps);
       const remainder =
-        event.translationY + (next - startValueRef.current) * itemHeight;
+        event.translationY + (next - startValueRef.current) * neighborStep;
       translateY.setValue(remainder);
     })
     .onEnd((event) => {
@@ -113,64 +123,61 @@ export default function TimeColumn({
       hideNeighborsSoon();
     });
 
-  const items = [];
-  for (let offset = -NEIGHBORS; offset <= NEIGHBORS; offset += 1) {
+  const neighbors = [-2, -1, 1, 2].map((offset) => {
     const itemValue = displayValue + offset;
-    items.push({
+    return {
       offset,
       itemValue,
       visible: itemValue >= min && itemValue <= max,
-    });
-  }
+    };
+  });
 
   return (
     <GestureDetector gesture={gesture}>
-      <View
-        style={[
-          styles.column,
-          {
-            height: itemHeight * (NEIGHBORS * 2 + 1),
-            minWidth: fontSize * 1.35,
-          },
-        ]}
-      >
-        <Animated.View style={{ transform: [{ translateY }] }}>
-          {items.map(({ offset, itemValue, visible }) => {
-            const isCenter = offset === 0;
-            const distance = Math.abs(offset);
-            return (
-              <Animated.View
-                key={`${offset}`}
-                style={[
-                  styles.item,
-                  { height: itemHeight },
-                  !isCenter && { opacity: neighborOpacity },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.text,
-                    {
-                      color,
-                      fontSize: isCenter
-                        ? fontSize
-                        : fontSize * (distance === 1 ? 0.38 : 0.28),
-                      fontFamily,
-                      opacity: !visible
-                        ? 0
-                        : isCenter
-                          ? 1
-                          : distance === 1
-                            ? 0.38
-                            : 0.18,
-                    },
-                  ]}
-                >
-                  {visible ? pad2(itemValue) : " "}
-                </Text>
-              </Animated.View>
-            );
-          })}
+      <View style={[styles.column, { width: columnWidth, height: itemHeight }]}>
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.neighbors, { opacity: neighborOpacity }]}
+        >
+          {neighbors.map(({ offset, itemValue, visible }) => (
+            <Text
+              key={offset}
+              style={[
+                styles.neighbor,
+                {
+                  top: itemHeight / 2 + offset * neighborStep - fontSize * 0.22,
+                  width: columnWidth,
+                  color,
+                  fontSize: fontSize * (Math.abs(offset) === 1 ? 0.36 : 0.26),
+                  fontFamily,
+                  opacity: visible ? (Math.abs(offset) === 1 ? 0.4 : 0.2) : 0,
+                },
+              ]}
+            >
+              {visible ? pad2(itemValue) : " "}
+            </Text>
+          ))}
+        </Animated.View>
+
+        <Animated.View
+          style={[
+            styles.center,
+            { height: itemHeight, transform: [{ translateY }] },
+          ]}
+        >
+          <Text
+            style={[
+              styles.centerText,
+              {
+                color,
+                fontSize,
+                fontFamily,
+                lineHeight: itemHeight,
+              },
+            ]}
+          >
+            {pad2(displayValue)}
+          </Text>
         </Animated.View>
       </View>
     </GestureDetector>
@@ -179,14 +186,26 @@ export default function TimeColumn({
 
 const styles = StyleSheet.create({
   column: {
-    overflow: "hidden",
-    justifyContent: "center",
-  },
-  item: {
+    overflow: "visible",
     alignItems: "center",
     justifyContent: "center",
   },
-  text: {
+  neighbors: {
+    ...StyleSheet.absoluteFill,
+  },
+  neighbor: {
+    position: "absolute",
+    textAlign: "center",
+    letterSpacing: -1,
+    includeFontPadding: false,
+  },
+  center: {
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1,
+  },
+  centerText: {
+    textAlign: "center",
     letterSpacing: -2,
     includeFontPadding: false,
     textAlignVertical: "center",
