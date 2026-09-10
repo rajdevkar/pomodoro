@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "owner": "tronix99",
+    "owner": "rajdevkar99",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.rajdevkar.timo",
