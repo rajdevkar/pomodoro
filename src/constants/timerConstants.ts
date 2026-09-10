@@ -1,34 +1,26 @@
-export const fontNames = ["Space Grotesk", "Outfit"];
+/** Registered expo-font family used for the timer digits. */
+export const timerFontFamily = "SpaceGrotesk_700Bold";
 
-/** Registered expo-font family names, aligned with fontNames */
-export const fontFamilies = ["SpaceGrotesk_700Bold", "Outfit_700Bold"];
+const FONT_METRICS = {
+  digitWidth: 1.34,
+  rowHeight: 1.2,
+  sizeScale: 1,
+  colonWidth: 0.42,
+  baselineNudge: 0,
+} as const;
 
-/** Per-font digit box. baselineNudge is a fraction of fontSize, positive shifts down. */
-export const fontMetrics = [
-  { digitWidth: 1.34, rowHeight: 1.2, sizeScale: 1, colonWidth: 0.42, baselineNudge: 0 },
-  { digitWidth: 1.34, rowHeight: 1.2, sizeScale: 1, colonWidth: 0.42, baselineNudge: 0 },
-] as const;
+/** Fixed size relative to viewport (replaces the old size slider default). */
+const FONT_SIZE_PERCENT = 50;
 
-export function resolveFontIndex(fontIndex: number) {
-  if (fontIndex < 0 || fontIndex >= fontFamilies.length) return 0;
-  return fontIndex;
-}
-
-export function timerLayout(
-  fontIndex: number,
-  viewportWidth: number,
-  viewportHeight: number,
-  fontSizePercent: number,
-) {
-  const metrics = fontMetrics[resolveFontIndex(fontIndex)] ?? fontMetrics[0];
+export function timerLayout(viewportWidth: number, viewportHeight: number) {
   const base = Math.min(
-    Math.max((fontSizePercent / 100) * viewportHeight * 0.2, 40),
+    Math.max((FONT_SIZE_PERCENT / 100) * viewportHeight * 0.2, 40),
     viewportWidth * 0.24,
   );
-  let fontSize = base * metrics.sizeScale;
-  let itemHeight = Math.round(fontSize * metrics.rowHeight);
-  let columnWidth = Math.round(fontSize * metrics.digitWidth);
-  let colonWidth = Math.round(fontSize * metrics.colonWidth);
+  let fontSize = base * FONT_METRICS.sizeScale;
+  let itemHeight = Math.round(fontSize * FONT_METRICS.rowHeight);
+  let columnWidth = Math.round(fontSize * FONT_METRICS.digitWidth);
+  let colonWidth = Math.round(fontSize * FONT_METRICS.colonWidth);
   const maxWidth = viewportWidth * 0.82;
   const rawWidth = columnWidth * 2 + colonWidth + 40;
 
@@ -40,7 +32,9 @@ export function timerLayout(
     colonWidth = Math.round(colonWidth * scale);
   }
 
-  const neighborStride = Math.round(Math.max(fontSize * 0.76, itemHeight * 0.64));
+  const neighborStride = Math.round(
+    Math.max(fontSize * 0.76, itemHeight * 0.64),
+  );
 
   return {
     fontSize,
@@ -49,7 +43,7 @@ export function timerLayout(
     colonWidth,
     timeWidth: columnWidth * 2 + colonWidth,
     neighborStride,
-    baselineNudge: Math.round(fontSize * metrics.baselineNudge),
+    baselineNudge: Math.round(fontSize * FONT_METRICS.baselineNudge),
   };
 }
 

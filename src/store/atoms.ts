@@ -12,18 +12,6 @@ export const themeAtom = atomWithStorage<"light" | "dark">(
   storage,
 );
 
-export const fontIndexAtom = atomWithStorage<number>(
-  "pomodoro-font-index",
-  0,
-  storage,
-);
-
-export const fontSizePercentAtom = atomWithStorage<number>(
-  "pomodoro-font-size-percent",
-  50,
-  storage,
-);
-
 export const durationMsAtom = atomWithStorage<number>(
   "pomodoro-duration-ms",
   25 * 60 * 1000,

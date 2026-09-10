@@ -1,7 +1,6 @@
 import "react-native-gesture-handler";
 import PomodoroTimer from "@/components/PomodoroTimer";
 import { themeAtom } from "@/store/atoms";
-import { Outfit_700Bold } from "@expo-google-fonts/outfit";
 import { SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk";
 import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
@@ -31,7 +30,6 @@ function ThemedApp() {
 export default function App() {
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_700Bold,
-    Outfit_700Bold,
   });
 
   if (!fontsLoaded) {

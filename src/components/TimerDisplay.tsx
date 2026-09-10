@@ -1,14 +1,6 @@
 import TimeColumn from "@/components/TimeColumn";
-import {
-  fontFamilies,
-  resolveFontIndex,
-  timerLayout,
-} from "@/constants/timerConstants";
-import {
-  fontIndexAtom,
-  fontSizePercentAtom,
-  themeAtom,
-} from "@/store/atoms";
+import { timerFontFamily, timerLayout } from "@/constants/timerConstants";
+import { themeAtom } from "@/store/atoms";
 import { durationFromParts, splitTime } from "@/utils/timeUtils";
 import { useAtomValue } from "jotai";
 import React, { useEffect, useRef } from "react";
@@ -28,17 +20,13 @@ export default function TimerDisplay({
   onDurationChange,
 }: TimerDisplayProps) {
   const theme = useAtomValue(themeAtom);
-  const fontIndex = useAtomValue(fontIndexAtom);
-  const fontSizePercent = useAtomValue(fontSizePercentAtom);
   const colonOpacity = useRef(new Animated.Value(1)).current;
 
   const { height, width } = Dimensions.get("window");
-  const safeFontIndex = resolveFontIndex(fontIndex);
   const { fontSize, itemHeight, columnWidth, colonWidth, baselineNudge } =
-    timerLayout(safeFontIndex, width, height, fontSizePercent);
+    timerLayout(width, height);
 
   const isDark = theme === "dark";
-  const family = fontFamilies[safeFontIndex] ?? fontFamilies[0];
   const color = isDark ? "#ffffff" : "#000000";
   const { minutes, seconds } = splitTime(timeLeftMs);
   const wheelHeight = itemHeight * 3;
@@ -105,7 +93,7 @@ export default function TimerDisplay({
           itemHeight={itemHeight}
           columnWidth={columnWidth}
           fontSize={fontSize}
-          fontFamily={family}
+          fontFamily={timerFontFamily}
           baselineNudge={baselineNudge}
           color={color}
           onChange={(nextMinutes) => applyParts(nextMinutes, seconds)}
@@ -121,7 +109,7 @@ export default function TimerDisplay({
           itemHeight={itemHeight}
           columnWidth={columnWidth}
           fontSize={fontSize}
-          fontFamily={family}
+          fontFamily={timerFontFamily}
           baselineNudge={baselineNudge}
           color={color}
           onChange={(nextSeconds) => applyParts(minutes, nextSeconds)}
@@ -146,7 +134,7 @@ export default function TimerDisplay({
               {
                 color,
                 fontSize,
-                fontFamily: family,
+                fontFamily: timerFontFamily,
                 width: colonWidth,
                 height: itemHeight,
                 lineHeight: itemHeight,

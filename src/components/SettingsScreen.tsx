@@ -1,17 +1,14 @@
-import { endSoundOptions, fontNames, resolveFontIndex, tickSoundOptions } from "@/constants/timerConstants";
+import { endSoundOptions, tickSoundOptions } from "@/constants/timerConstants";
 import {
   endSoundAtom,
-  fontIndexAtom,
-  fontSizePercentAtom,
   themeAtom,
   tickingSoundAtom,
 } from "@/store/atoms";
 import type { EndSoundId, TickSoundId } from "@/utils/audioUtils";
 import { playEndSound, playTickSound } from "@/utils/audioUtils";
 import { triggerLightHaptic } from "@/utils/haptics";
-import Slider from "@react-native-community/slider";
 import { useAtom } from "jotai";
-import React, { useEffect } from "react";
+import React from "react";
 import {
   Linking,
   Modal,
@@ -85,15 +82,8 @@ function RowDivider({ isDark, inset = 16 }: { isDark: boolean; inset?: number })
 export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps) {
   const insets = useSafeAreaInsets();
   const [theme, setTheme] = useAtom(themeAtom);
-  const [fontIndex, setFontIndex] = useAtom(fontIndexAtom);
-  const [fontSizePercent, setFontSizePercent] = useAtom(fontSizePercentAtom);
   const [tickingSound, setTickingSound] = useAtom(tickingSoundAtom);
   const [endSound, setEndSound] = useAtom(endSoundAtom);
-
-  useEffect(() => {
-    const safe = resolveFontIndex(fontIndex);
-    if (safe !== fontIndex) setFontIndex(safe);
-  }, [fontIndex, setFontIndex]);
 
   const isDark = theme === "dark";
   const accent = "#0A84FF";
@@ -249,74 +239,6 @@ export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps)
             <Group isDark={isDark}>
               <View style={styles.rowBlock}>
                 <Text style={[styles.rowLabel, { color: labelColor }]}>
-                  Font
-                </Text>
-                <View style={styles.fontGrid}>
-                  {fontNames.map((name, i) => {
-                    const selected = resolveFontIndex(fontIndex) === i;
-                    return (
-                      <Pressable
-                        key={name}
-                        onPress={() => withHaptic(() => setFontIndex(i))}
-                        style={[
-                          styles.fontChip,
-                          {
-                            backgroundColor: selected
-                              ? accent
-                              : isDark
-                                ? "rgba(118,118,128,0.24)"
-                                : "rgba(118,118,128,0.12)",
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.fontChipText,
-                            {
-                              color: selected ? "#ffffff" : labelColor,
-                              opacity: selected ? 1 : 0.7,
-                            },
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {name}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </View>
-              <RowDivider isDark={isDark} />
-              <View style={styles.rowBlock}>
-                <View style={styles.rowBetween}>
-                  <Text style={[styles.rowLabel, { color: labelColor }]}>
-                    Size
-                  </Text>
-                  <Text style={[styles.rowValue, { color: secondaryColor }]}>
-                    {fontSizePercent}%
-                  </Text>
-                </View>
-                <Slider
-                  minimumValue={20}
-                  maximumValue={100}
-                  step={1}
-                  value={fontSizePercent}
-                  onValueChange={(value) =>
-                    setFontSizePercent(Math.round(value))
-                  }
-                  onSlidingComplete={() => {
-                    void triggerLightHaptic();
-                  }}
-                  minimumTrackTintColor={accent}
-                  maximumTrackTintColor={
-                    isDark ? "rgba(120,120,128,0.36)" : "rgba(120,120,128,0.2)"
-                  }
-                  thumbTintColor="#ffffff"
-                />
-              </View>
-              <RowDivider isDark={isDark} />
-              <View style={styles.rowBlock}>
-                <Text style={[styles.rowLabel, { color: labelColor }]}>
                   Theme
                 </Text>
                 {renderSegment(
@@ -454,16 +376,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 10,
   },
-  rowBetween: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
   rowLabel: {
-    fontSize: 17,
-    fontWeight: "400",
-  },
-  rowValue: {
     fontSize: 17,
     fontWeight: "400",
   },
@@ -498,20 +411,6 @@ const styles = StyleSheet.create({
   segmentText: {
     fontSize: 13,
     textAlign: "center",
-  },
-  fontGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  fontChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  fontChipText: {
-    fontSize: 14,
-    fontWeight: "500",
   },
   helpRow: {
     flexDirection: "row",
