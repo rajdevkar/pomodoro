@@ -50,8 +50,7 @@ export function timerLayout(
     colonWidth = Math.round(colonWidth * scale);
   }
 
-  const neighborSize = Math.round(fontSize * 0.3);
-  const neighborStride = Math.round(itemHeight * 0.78 + neighborSize * 0.7);
+  const neighborStride = Math.round(Math.max(fontSize * 0.76, itemHeight * 0.64));
 
   return {
     fontSize,
@@ -59,7 +58,6 @@ export function timerLayout(
     columnWidth,
     colonWidth,
     timeWidth: columnWidth * 2 + colonWidth,
-    neighborSize,
     neighborStride,
     baselineNudge: Math.round(fontSize * metrics.baselineNudge),
   };

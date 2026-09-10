@@ -36,7 +36,6 @@ export default function TimerDisplay({
     itemHeight,
     columnWidth,
     colonWidth,
-    neighborSize,
     neighborStride,
     baselineNudge,
   } = timerLayout(fontIndex, width, height, fontSizePercent);
@@ -104,7 +103,6 @@ export default function TimerDisplay({
           columnWidth={columnWidth}
           fontSize={fontSize}
           fontFamily={family}
-          neighborSize={neighborSize}
           neighborStride={neighborStride}
           baselineNudge={baselineNudge}
           color={color}
@@ -137,7 +135,6 @@ export default function TimerDisplay({
           columnWidth={columnWidth}
           fontSize={fontSize}
           fontFamily={family}
-          neighborSize={neighborSize}
           neighborStride={neighborStride}
           baselineNudge={baselineNudge}
           color={color}
@@ -161,6 +158,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 28,
     paddingVertical: 18,
+    overflow: "visible",
   },
   stage: {
     flexDirection: "row",

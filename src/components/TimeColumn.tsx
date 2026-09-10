@@ -1,8 +1,10 @@
 import { triggerSelectionHaptic } from "@/utils/haptics";
 import { pad2 } from "@/utils/timeUtils";
-import React, { useEffect, useRef, useState } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Animated, StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+
+const STRIP_RANGE = 4;
 
 interface TimeColumnProps {
   value: number;
@@ -13,7 +15,6 @@ interface TimeColumnProps {
   columnWidth: number;
   fontSize: number;
   fontFamily: string;
-  neighborSize: number;
   neighborStride: number;
   baselineNudge: number;
   color: string;
@@ -30,70 +31,47 @@ export default function TimeColumn({
   columnWidth,
   fontSize,
   fontFamily,
-  neighborSize,
   neighborStride,
   baselineNudge,
   color,
   hapticsEnabled,
   onChange,
 }: TimeColumnProps) {
-  const [displayValue, setDisplayValue] = useState(value);
+  const slotHeight = neighborStride;
   const translateY = useRef(new Animated.Value(0)).current;
-  const neighborOpacity = useRef(new Animated.Value(0)).current;
   const startValueRef = useRef(value);
-  const displayValueRef = useRef(value);
-  const hideNeighborsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const baseValueRef = useRef(value);
+  const [baseValue, setBaseValue] = useState(value);
 
   useEffect(() => {
-    setDisplayValue(value);
-    displayValueRef.current = value;
+    startValueRef.current = value;
+    baseValueRef.current = value;
+    setBaseValue(value);
     translateY.setValue(0);
   }, [translateY, value]);
 
-  useEffect(() => {
-    if (!enabled) {
-      if (hideNeighborsTimer.current) {
-        clearTimeout(hideNeighborsTimer.current);
-      }
-      neighborOpacity.setValue(0);
-    }
-  }, [enabled, neighborOpacity]);
-
   const clamp = (next: number) => Math.min(max, Math.max(min, next));
 
-  const showNeighbors = () => {
-    if (hideNeighborsTimer.current) {
-      clearTimeout(hideNeighborsTimer.current);
-      hideNeighborsTimer.current = null;
-    }
-    Animated.timing(neighborOpacity, {
-      toValue: 1,
-      duration: 100,
-      useNativeDriver: true,
-    }).start();
+  const clampOffset = (offset: number, origin: number) => {
+    const maxDrag = (origin - min) * slotHeight;
+    const minDrag = (origin - max) * slotHeight;
+    return Math.min(maxDrag, Math.max(minDrag, offset));
   };
 
-  const hideNeighborsSoon = () => {
-    if (hideNeighborsTimer.current) {
-      clearTimeout(hideNeighborsTimer.current);
-    }
-    hideNeighborsTimer.current = setTimeout(() => {
-      Animated.timing(neighborOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    }, 280);
-  };
+  const nearestStep = (offset: number) => Math.round(-offset / slotHeight);
 
-  const setLiveValue = (next: number) => {
-    const clamped = clamp(next);
-    if (clamped !== displayValueRef.current) {
-      displayValueRef.current = clamped;
-      setDisplayValue(clamped);
+  const moveStrip = (translationY: number) => {
+    const origin = startValueRef.current;
+    const offset = clampOffset(translationY, origin);
+    const nextBase = clamp(origin + nearestStep(offset));
+    const remainder = offset + (nextBase - origin) * slotHeight;
+    translateY.setValue(remainder);
+
+    if (nextBase !== baseValueRef.current) {
+      baseValueRef.current = nextBase;
+      setBaseValue(nextBase);
       if (hapticsEnabled) void triggerSelectionHaptic();
     }
-    return clamped;
   };
 
   const gesture = Gesture.Pan()
@@ -102,41 +80,47 @@ export default function TimeColumn({
     .failOffsetX([-36, 36])
     .runOnJS(true)
     .onBegin(() => {
-      startValueRef.current = displayValueRef.current;
-      showNeighbors();
+      startValueRef.current = baseValueRef.current;
     })
     .onUpdate((event) => {
-      const steps = Math.round(-event.translationY / neighborStride);
-      const next = setLiveValue(startValueRef.current + steps);
-      const remainder =
-        event.translationY + (next - startValueRef.current) * neighborStride;
-      translateY.setValue(remainder);
+      moveStrip(event.translationY);
     })
     .onEnd((event) => {
-      const flick = Math.round(-event.velocityY / 1600);
-      if (flick !== 0) {
-        setLiveValue(displayValueRef.current + flick);
-      }
-      onChange(displayValueRef.current);
+      const origin = startValueRef.current;
+      const projected = clampOffset(
+        event.translationY + event.velocityY * 0.16,
+        origin,
+      );
+      const next = clamp(origin + nearestStep(projected));
+      const remainder =
+        clampOffset(event.translationY, origin) + (next - origin) * slotHeight;
+
+      baseValueRef.current = next;
+      setBaseValue(next);
+      translateY.setValue(remainder);
+
       Animated.spring(translateY, {
         toValue: 0,
-        damping: 20,
-        stiffness: 260,
-        mass: 0.65,
+        damping: 22,
+        stiffness: 280,
+        mass: 0.7,
         useNativeDriver: true,
-      }).start();
-      hideNeighborsSoon();
+      }).start(({ finished }) => {
+        if (!finished) return;
+        startValueRef.current = next;
+        onChange(next);
+      });
     });
 
-  const neighbors = [-1, 1].map((offset) => {
-    const itemValue = displayValue + offset;
-    return {
-      offset,
-      itemValue,
-      top: itemHeight / 2 + offset * neighborStride - neighborSize * 0.55,
-      visible: itemValue >= min && itemValue <= max,
-    };
-  });
+  const items = useMemo(() => {
+    const offsets = enabled
+      ? Array.from({ length: STRIP_RANGE * 2 + 1 }, (_, index) => index - STRIP_RANGE)
+      : [0];
+
+    return offsets
+      .map((offset) => ({ offset, itemValue: baseValue + offset }))
+      .filter(({ itemValue }) => itemValue >= min && itemValue <= max);
+  }, [baseValue, enabled, max, min]);
 
   return (
     <GestureDetector gesture={gesture}>
@@ -144,61 +128,65 @@ export default function TimeColumn({
         style={[
           styles.column,
           {
-            minWidth: Math.max(48, Math.round(fontSize * 0.55)),
+            minWidth: Math.max(48, Math.round(columnWidth * 0.55)),
             height: itemHeight,
           },
         ]}
       >
-        <Animated.View
-          pointerEvents="none"
-          style={[styles.neighbors, { opacity: neighborOpacity }]}
-        >
-          {neighbors.map(({ offset, itemValue, top, visible }) => (
-            <Text
-              key={offset}
+        {items.map(({ offset, itemValue }) => {
+          const centerAt = -offset * slotHeight;
+          return (
+            <Animated.Text
+              key={itemValue}
               numberOfLines={1}
+              pointerEvents="none"
               style={[
                 styles.digit,
-                styles.neighbor,
                 {
-                  top,
                   color,
-                  fontSize: neighborSize,
+                  fontSize,
                   fontFamily,
-                  opacity: visible ? 0.36 : 0,
-                  transform: [{ translateY: baselineNudge * 0.3 }],
+                  height: slotHeight,
+                  top: (itemHeight - slotHeight) / 2,
+                  opacity: enabled
+                    ? translateY.interpolate({
+                        inputRange: [
+                          centerAt - slotHeight,
+                          centerAt,
+                          centerAt + slotHeight,
+                        ],
+                        outputRange: [0.22, 1, 0.22],
+                        extrapolate: "clamp",
+                      })
+                    : 1,
+                  transform: [
+                    {
+                      translateY: Animated.add(
+                        translateY,
+                        offset * slotHeight + baselineNudge,
+                      ),
+                    },
+                    {
+                      scale: enabled
+                        ? translateY.interpolate({
+                            inputRange: [
+                              centerAt - slotHeight,
+                              centerAt,
+                              centerAt + slotHeight,
+                            ],
+                            outputRange: [0.34, 1, 0.34],
+                            extrapolate: "clamp",
+                          })
+                        : 1,
+                    },
+                  ],
                 },
               ]}
             >
-              {visible ? pad2(itemValue) : " "}
-            </Text>
-          ))}
-        </Animated.View>
-
-        <Animated.View
-          style={[
-            styles.center,
-            {
-              height: itemHeight,
-              transform: [{ translateY }],
-            },
-          ]}
-        >
-          <Text
-            numberOfLines={1}
-            style={[
-              styles.digit,
-              {
-                color,
-                fontSize,
-                fontFamily,
-                transform: [{ translateY: baselineNudge }],
-              },
-            ]}
-          >
-            {pad2(displayValue)}
-          </Text>
-        </Animated.View>
+              {pad2(itemValue)}
+            </Animated.Text>
+          );
+        })}
       </View>
     </GestureDetector>
   );
@@ -211,22 +199,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 2,
   },
-  neighbors: {
-    ...StyleSheet.absoluteFill,
-  },
-  neighbor: {
+  digit: {
     position: "absolute",
     left: 0,
     right: 0,
-  },
-  center: {
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1,
-  },
-  digit: {
     textAlign: "center",
     includeFontPadding: false,
+    textAlignVertical: "center",
   },
 });
