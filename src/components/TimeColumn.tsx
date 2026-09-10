@@ -1,9 +1,14 @@
 import { triggerSelectionHaptic } from "@/utils/haptics";
 import { pad2 } from "@/utils/timeUtils";
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
-import { StyleSheet, Text, View, type NativeSyntheticEvent } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+} from "react-native";
 import { FlatList } from "react-native-gesture-handler";
-import type { NativeScrollEvent } from "react-native";
 
 interface TimeColumnProps {
   value: number;
@@ -36,6 +41,12 @@ export default function TimeColumn({
 }: TimeColumnProps) {
   const listRef = useRef<FlatList<number>>(null);
   const lastIndexRef = useRef(value - min);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [activeIndex, setActiveIndex] = useState(() =>
+    Math.max(0, value - min),
+  );
+  const [showNeighbors, setShowNeighbors] = useState(false);
+
   const data = useMemo(() => {
     const items: number[] = [];
     for (let item = min; item <= max; item += 1) {
@@ -53,6 +64,7 @@ export default function TimeColumn({
     (next: number, animated: boolean) => {
       const index = indexForValue(next);
       lastIndexRef.current = index;
+      setActiveIndex(index);
       listRef.current?.scrollToOffset({
         offset: index * itemHeight,
         animated,
@@ -65,15 +77,38 @@ export default function TimeColumn({
     scrollToValue(value, false);
   }, [scrollToValue, value]);
 
+  useEffect(() => {
+    return () => {
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    };
+  }, []);
+
   const valueFromOffset = (offsetY: number) => {
     const index = Math.round(offsetY / itemHeight);
     return data[Math.max(0, Math.min(data.length - 1, index))] ?? min;
+  };
+
+  const revealNeighbors = () => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+    setShowNeighbors(true);
+  };
+
+  const hideNeighborsSoon = () => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => {
+      setShowNeighbors(false);
+      hideTimerRef.current = null;
+    }, 220);
   };
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (!enabled) return;
     const next = valueFromOffset(event.nativeEvent.contentOffset.y);
     const index = indexForValue(next);
+    setActiveIndex(index);
     if (index !== lastIndexRef.current) {
       lastIndexRef.current = index;
       if (hapticsEnabled) void triggerSelectionHaptic();
@@ -83,6 +118,8 @@ export default function TimeColumn({
   const commitOffset = (offsetY: number) => {
     if (!enabled) return;
     const next = valueFromOffset(offsetY);
+    setActiveIndex(indexForValue(next));
+    hideNeighborsSoon();
     if (next !== value) {
       onChange(next);
     } else {
@@ -90,25 +127,31 @@ export default function TimeColumn({
     }
   };
 
-  const renderItem = ({ item }: { item: number }) => (
-    <View style={[styles.row, { height: itemHeight, width: columnWidth }]}>
-      <Text
-        numberOfLines={1}
-        style={[
-          styles.digit,
-          {
-            color,
-            fontSize,
-            fontFamily,
-            lineHeight: itemHeight,
-            transform: [{ translateY: baselineNudge }],
-          },
-        ]}
-      >
-        {pad2(item)}
-      </Text>
-    </View>
-  );
+  const renderItem = ({ item, index }: { item: number; index: number }) => {
+    const selected = index === activeIndex;
+    const opacity = selected ? 1 : showNeighbors ? 0.32 : 0;
+
+    return (
+      <View style={[styles.row, { height: itemHeight, width: columnWidth }]}>
+        <Text
+          numberOfLines={1}
+          style={[
+            styles.digit,
+            {
+              color,
+              fontSize,
+              fontFamily,
+              lineHeight: itemHeight,
+              opacity,
+              transform: [{ translateY: baselineNudge }],
+            },
+          ]}
+        >
+          {pad2(item)}
+        </Text>
+      </View>
+    );
+  };
 
   if (!enabled) {
     return (
@@ -147,6 +190,7 @@ export default function TimeColumn({
         data={data}
         keyExtractor={(item) => String(item)}
         renderItem={renderItem}
+        extraData={{ activeIndex, showNeighbors }}
         getItemLayout={(_, index) => ({
           length: itemHeight,
           offset: itemHeight * index,
@@ -160,6 +204,7 @@ export default function TimeColumn({
         disableIntervalMomentum
         nestedScrollEnabled
         scrollEventThrottle={16}
+        onScrollBeginDrag={revealNeighbors}
         onScroll={handleScroll}
         onMomentumScrollEnd={(event) =>
           commitOffset(event.nativeEvent.contentOffset.y)

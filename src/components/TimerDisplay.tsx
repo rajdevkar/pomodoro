@@ -39,6 +39,7 @@ export default function TimerDisplay({
   const color = isDark ? "#ffffff" : "#000000";
   const { minutes, seconds } = splitTime(timeLeftMs);
   const wheelHeight = itemHeight * 3;
+  const stageWidth = columnWidth * 2 + colonWidth;
 
   useEffect(() => {
     if (!isActive) {
@@ -76,7 +77,7 @@ export default function TimerDisplay({
         { backgroundColor: isDark ? "#000000" : "#ffffff" },
       ]}
     >
-      <View style={[styles.stage, { height: wheelHeight }]}>
+      <View style={[styles.stage, { width: stageWidth, height: wheelHeight }]}>
         <View
           pointerEvents="none"
           style={[
@@ -107,25 +108,9 @@ export default function TimerDisplay({
           hapticsEnabled={hapticsEnabled}
           onChange={(nextMinutes) => applyParts(nextMinutes, seconds)}
         />
-        <View style={[styles.colonSlot, { width: colonWidth, height: wheelHeight }]}>
-          <Animated.Text
-            numberOfLines={1}
-            style={[
-              styles.colon,
-              {
-                color,
-                fontSize,
-                fontFamily: family,
-                height: itemHeight,
-                lineHeight: itemHeight,
-                opacity: colonOpacity,
-                transform: [{ translateY: baselineNudge }],
-              },
-            ]}
-          >
-            :
-          </Animated.Text>
-        </View>
+
+        <View style={{ width: colonWidth, height: wheelHeight }} />
+
         <TimeColumn
           value={seconds}
           min={0}
@@ -140,6 +125,38 @@ export default function TimerDisplay({
           hapticsEnabled={hapticsEnabled}
           onChange={(nextSeconds) => applyParts(minutes, nextSeconds)}
         />
+
+        <View
+          pointerEvents="none"
+          style={[
+            styles.colonSlot,
+            {
+              width: colonWidth,
+              height: itemHeight,
+              top: itemHeight,
+              left: columnWidth,
+            },
+          ]}
+        >
+          <Animated.Text
+            numberOfLines={1}
+            style={[
+              styles.colon,
+              {
+                color,
+                fontSize,
+                fontFamily: family,
+                width: colonWidth,
+                height: itemHeight,
+                lineHeight: itemHeight,
+                opacity: colonOpacity,
+                transform: [{ translateY: baselineNudge }],
+              },
+            ]}
+          >
+            :
+          </Animated.Text>
+        </View>
       </View>
     </View>
   );
@@ -162,8 +179,10 @@ const styles = StyleSheet.create({
     borderRadius: 28,
   },
   colonSlot: {
+    position: "absolute",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 2,
   },
   colon: {
     textAlign: "center",
