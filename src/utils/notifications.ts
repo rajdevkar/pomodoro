@@ -83,7 +83,7 @@ export async function sendTimerFinishedNotification() {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: "Timo",
-        body: "Timer finished!",
+        body: "Time's up — take a break.",
         sound: true,
       },
       trigger: null,

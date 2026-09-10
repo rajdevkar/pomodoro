@@ -119,7 +119,7 @@ export default function SettingsControl({
           >
             <View style={styles.section}>
               <Text style={[styles.label, isDark && styles.labelDark]}>
-                Step Amount (Minutes)
+                Step
               </Text>
               <View style={[styles.segment, segmentBg]}>
                 {stepOptions.map((step) => {
@@ -142,7 +142,7 @@ export default function SettingsControl({
                           !selected && styles.dimmed,
                         ]}
                       >
-                        {step}m
+                        {step} min
                       </Text>
                     </Pressable>
                   );
@@ -153,7 +153,7 @@ export default function SettingsControl({
             <View style={styles.section}>
               <View style={styles.row}>
                 <Text style={[styles.label, isDark && styles.labelDark]}>
-                  Timer Duration
+                  Duration
                 </Text>
                 <Text
                   style={[
@@ -161,7 +161,7 @@ export default function SettingsControl({
                     { color: isDark ? "#ffffff" : "#000000" },
                   ]}
                 >
-                  {durationMinutes}m
+                  {durationMinutes} min
                 </Text>
               </View>
               <Slider
@@ -194,7 +194,7 @@ export default function SettingsControl({
 
             <View style={styles.section}>
               <Text style={[styles.label, isDark && styles.labelDark]}>
-                Haptics
+                Touch feedback
               </Text>
               {renderSegment(
                 [
@@ -212,7 +212,7 @@ export default function SettingsControl({
 
             <View style={styles.section}>
               <Text style={[styles.label, isDark && styles.labelDark]}>
-                Ticking Sound
+                Tick sound
               </Text>
               {renderSegment(
                 tickSoundOptions,
@@ -228,7 +228,7 @@ export default function SettingsControl({
 
             <View style={styles.section}>
               <Text style={[styles.label, isDark && styles.labelDark]}>
-                Timer End Sound
+                End sound
               </Text>
               {renderSegment(
                 endSoundOptions,
@@ -255,7 +255,7 @@ export default function SettingsControl({
 
             <View style={styles.section}>
               <Text style={[styles.label, isDark && styles.labelDark]}>
-                Font Family
+                Font
               </Text>
               <View style={styles.fontGrid}>
                 {fontNames.map((name, i) => {
@@ -285,6 +285,7 @@ export default function SettingsControl({
                                 ? "#ffffff"
                                 : "#000000",
                           },
+                          !selected && styles.dimmed,
                         ]}
                         numberOfLines={1}
                       >
@@ -299,7 +300,7 @@ export default function SettingsControl({
             <View style={styles.section}>
               <View style={styles.row}>
                 <Text style={[styles.label, isDark && styles.labelDark]}>
-                  Font Size
+                  Size
                 </Text>
                 <Text
                   style={[
@@ -365,16 +366,22 @@ export default function SettingsControl({
 
             <View style={styles.section}>
               <Text style={[styles.label, isDark && styles.labelDark]}>
-                Gestures
+                How to use
               </Text>
               <Text
                 style={[
                   styles.helpText,
-                  { color: isDark ? "rgba(255,255,255,0.55)" : "rgba(0,0,0,0.55)" },
+                  {
+                    color: isDark
+                      ? "rgba(255,255,255,0.72)"
+                      : "rgba(0,0,0,0.72)",
+                  },
                 ]}
               >
-                Tap to play/pause · Swipe up/down to adjust time · Hold to
-                reset · Swipe left/right for settings
+                {`Tap — play or pause
+Swipe up / down — change duration
+Hold — reset
+Swipe sideways — open settings`}
               </Text>
             </View>
 
@@ -418,19 +425,18 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   label: {
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    color: "rgba(0,0,0,0.5)",
+    fontSize: 13,
+    fontWeight: "600",
+    letterSpacing: 0.2,
+    color: "rgba(0,0,0,0.55)",
   },
   labelDark: {
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(255,255,255,0.6)",
   },
   value: {
-    fontSize: 12,
-    fontWeight: "500",
-    opacity: 0.7,
+    fontSize: 13,
+    fontWeight: "600",
+    opacity: 0.85,
   },
   row: {
     flexDirection: "row",
@@ -463,14 +469,14 @@ const styles = StyleSheet.create({
     minWidth: "22%",
   },
   segmentText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "500",
   },
   capitalize: {
     textTransform: "capitalize",
   },
   dimmed: {
-    opacity: 0.5,
+    opacity: 0.62,
   },
   divider: {
     height: StyleSheet.hairlineWidth,
@@ -499,8 +505,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   helpText: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 22,
     fontWeight: "500",
   },
   coffeeText: {

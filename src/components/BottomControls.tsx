@@ -44,10 +44,10 @@ export default function BottomControls({
         <Text
           style={[
             styles.hint,
-            { color: isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)" },
+            { color: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" },
           ]}
         >
-          Tap play/pause · Swipe ↕ adjust · Hold reset · Swipe ↔ settings
+          Tap to start · Swipe ↕ time · Hold reset · Swipe ↔ menu
         </Text>
       ) : null}
 
@@ -89,11 +89,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   hint: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "500",
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
     textAlign: "center",
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
+    lineHeight: 16,
   },
   button: {
     width: 52,

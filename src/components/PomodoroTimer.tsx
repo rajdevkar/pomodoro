@@ -155,7 +155,7 @@ export default function PomodoroTimer() {
   const adjustTime = useCallback(
     (direction: "increment" | "decrement") => {
       if (isActive) {
-        setToastMessage("Pause the timer to adjust duration");
+        setToastMessage("Pause first to change the time");
         return;
       }
 
@@ -163,13 +163,13 @@ export default function PomodoroTimer() {
 
       if (direction === "increment") {
         if (durationMinutes + stepMinutes > 60) {
-          setToastMessage("Maximum duration is 60 minutes");
+          setToastMessage("Max is 60 minutes");
           return;
         }
         newDuration = Math.min(60, durationMinutes + stepMinutes);
       } else {
         if (durationMinutes - stepMinutes < stepMinutes) {
-          setToastMessage(`Minimum duration is ${stepMinutes} minutes`);
+          setToastMessage(`Min is ${stepMinutes} minutes`);
           return;
         }
         newDuration = Math.max(stepMinutes, durationMinutes - stepMinutes);
@@ -235,7 +235,7 @@ export default function PomodoroTimer() {
     setTimeLeftMs(durationMinutes * 60 * 1000);
     lastTickSecondRef.current = null;
     deactivateKeepAwake("timo-timer").catch(() => undefined);
-    setToastMessage("Timer reset");
+    setToastMessage("Reset");
   }, [
     durationMinutes,
     haptic,
