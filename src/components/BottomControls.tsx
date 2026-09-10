@@ -27,55 +27,74 @@ export default function BottomControls({
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingBottom: Math.max(20, insets.bottom + 6),
-          pointerEvents: "box-none",
-        },
-      ]}
-    >
-      {showGestureHint ? (
-        <Text
-          style={[
-            styles.hint,
-            { color: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" },
-          ]}
-        >
-          Tap to start · Swipe ↕ time · Hold reset · Swipe ↔ menu
-        </Text>
-      ) : null}
-
-      <Pressable
-        onPress={openSettings}
-        accessibilityLabel="Settings"
-        style={({ pressed }) => [
-          styles.button,
+    <>
+      <View
+        style={[
+          styles.topBar,
           {
-            backgroundColor: isDark
-              ? "rgba(255,255,255,0.12)"
-              : "rgba(0,0,0,0.06)",
-            opacity: pressed ? 0.75 : 1,
-            transform: [{ scale: pressed ? 0.95 : 1 }],
+            paddingTop: Math.max(12, insets.top + 4),
+            pointerEvents: "box-none",
           },
         ]}
       >
-        <SettingsIcon color={iconColor} />
-      </Pressable>
-    </View>
+        <Pressable
+          onPress={openSettings}
+          accessibilityLabel="Settings"
+          style={({ pressed }) => [
+            styles.button,
+            {
+              backgroundColor: isDark
+                ? "rgba(255,255,255,0.12)"
+                : "rgba(0,0,0,0.06)",
+              opacity: pressed ? 0.75 : 1,
+              transform: [{ scale: pressed ? 0.95 : 1 }],
+            },
+          ]}
+        >
+          <SettingsIcon color={iconColor} />
+        </Pressable>
+      </View>
+
+      {showGestureHint ? (
+        <View
+          style={[
+            styles.hintBar,
+            {
+              paddingBottom: Math.max(20, insets.bottom + 6),
+              pointerEvents: "none",
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.hint,
+              { color: isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" },
+            ]}
+          >
+            Tap to start · Swipe ↕ time · Hold reset · Swipe ↔ menu
+          </Text>
+        </View>
+      ) : null}
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  topBar: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    zIndex: 50,
+    paddingHorizontal: 16,
+    alignItems: "flex-end",
+  },
+  hintBar: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
     zIndex: 50,
     alignItems: "center",
-    gap: 12,
     paddingHorizontal: 16,
   },
   hint: {
@@ -87,8 +106,8 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   button: {
-    width: 52,
-    height: 52,
+    width: 44,
+    height: 44,
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
