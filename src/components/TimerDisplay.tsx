@@ -36,7 +36,6 @@ export default function TimerDisplay({
     itemHeight,
     columnWidth,
     colonWidth,
-    timeWidth,
     neighborSize,
     neighborStride,
     baselineNudge,
@@ -83,19 +82,19 @@ export default function TimerDisplay({
         { backgroundColor: isDark ? "#000000" : "#ffffff" },
       ]}
     >
-      <View style={[styles.stage, { width: timeWidth, height: itemHeight }]}>
-        <View
-          pointerEvents="none"
-          style={[
-            styles.selection,
-            {
-              backgroundColor: isDark
-                ? "rgba(255,255,255,0.07)"
-                : "rgba(0,0,0,0.05)",
-            },
-          ]}
-        />
-
+      <View
+        style={[
+          styles.pill,
+          {
+            minHeight: itemHeight + 36,
+            paddingHorizontal: Math.round(fontSize * 0.42),
+            backgroundColor: isDark
+              ? "rgba(255,255,255,0.07)"
+              : "rgba(0,0,0,0.05)",
+          },
+        ]}
+      >
+        <View style={[styles.stage, { height: itemHeight }]}>
         <TimeColumn
           value={minutes}
           min={0}
@@ -115,8 +114,6 @@ export default function TimerDisplay({
         <View style={[styles.colonSlot, { width: colonWidth, height: itemHeight }]}>
           <Animated.Text
             numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.55}
             style={[
               styles.colon,
               {
@@ -147,6 +144,7 @@ export default function TimerDisplay({
           hapticsEnabled={hapticsEnabled}
           onChange={(nextSeconds) => applyParts(minutes, nextSeconds)}
         />
+        </View>
       </View>
     </View>
   );
@@ -158,17 +156,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  pill: {
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 28,
+    paddingVertical: 18,
+  },
   stage: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     overflow: "visible",
-  },
-  selection: {
-    ...StyleSheet.absoluteFill,
-    left: -20,
-    right: -20,
-    borderRadius: 22,
   },
   colonSlot: {
     alignItems: "center",

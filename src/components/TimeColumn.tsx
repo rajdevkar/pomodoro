@@ -140,7 +140,15 @@ export default function TimeColumn({
 
   return (
     <GestureDetector gesture={gesture}>
-      <View style={[styles.column, { width: columnWidth, height: itemHeight }]}>
+      <View
+        style={[
+          styles.column,
+          {
+            minWidth: Math.max(48, Math.round(fontSize * 0.55)),
+            height: itemHeight,
+          },
+        ]}
+      >
         <Animated.View
           pointerEvents="none"
           style={[styles.neighbors, { opacity: neighborOpacity }]}
@@ -178,8 +186,6 @@ export default function TimeColumn({
         >
           <Text
             numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.55}
             style={[
               styles.digit,
               {
@@ -203,6 +209,7 @@ const styles = StyleSheet.create({
     overflow: "visible",
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 2,
   },
   neighbors: {
     ...StyleSheet.absoluteFill,

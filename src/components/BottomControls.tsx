@@ -28,11 +28,11 @@ export default function BottomControls({
     onOpenSettings();
   };
 
-  const hint = isActive
-    ? "Tap to pause"
+  const hintParts = isActive
+    ? ["Tap to pause"]
     : isPaused
-      ? "Tap to resume · Hold to reset"
-      : "Scroll to set · Tap to start";
+      ? ["Tap to resume", "Hold to reset"]
+      : ["Scroll to set", "Tap to start"];
 
   return (
     <>
@@ -72,14 +72,40 @@ export default function BottomControls({
           },
         ]}
       >
-        <Text
-          style={[
-            styles.hint,
-            { color: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.42)" },
-          ]}
-        >
-          {hint}
-        </Text>
+        <View style={styles.hintRow}>
+          {hintParts.map((part, index) => (
+            <React.Fragment key={part}>
+              {index > 0 ? (
+                <Text
+                  style={[
+                    styles.hint,
+                    styles.hintDot,
+                    {
+                      color: isDark
+                        ? "rgba(255,255,255,0.45)"
+                        : "rgba(0,0,0,0.42)",
+                    },
+                  ]}
+                >
+                  {" "}
+                  ·{" "}
+                </Text>
+              ) : null}
+              <Text
+                style={[
+                  styles.hint,
+                  {
+                    color: isDark
+                      ? "rgba(255,255,255,0.45)"
+                      : "rgba(0,0,0,0.42)",
+                  },
+                ]}
+              >
+                {part}
+              </Text>
+            </React.Fragment>
+          ))}
+        </View>
       </View>
     </>
   );
@@ -103,11 +129,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
   },
+  hintRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   hint: {
     fontSize: 13,
     fontWeight: "500",
-    letterSpacing: 0.2,
     textAlign: "center",
+  },
+  hintDot: {
+    fontWeight: "400",
   },
   button: {
     width: 44,

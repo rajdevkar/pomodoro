@@ -19,7 +19,7 @@ export const fontFamilies = [
 export const fontMetrics = [
   { digitWidth: 1.34, rowHeight: 1.2, sizeScale: 1, colonWidth: 0.34, baselineNudge: 0 },
   { digitWidth: 1.34, rowHeight: 1.2, sizeScale: 1, colonWidth: 0.34, baselineNudge: 0 },
-  { digitWidth: 1.52, rowHeight: 1.48, sizeScale: 0.78, colonWidth: 0.36, baselineNudge: 0.12 },
+  { digitWidth: 1.28, rowHeight: 1.36, sizeScale: 0.82, colonWidth: 0.3, baselineNudge: 0.06 },
   { digitWidth: 1.42, rowHeight: 1.18, sizeScale: 1.05, colonWidth: 0.32, baselineNudge: 0 },
   { digitWidth: 1.64, rowHeight: 1.22, sizeScale: 0.88, colonWidth: 0.36, baselineNudge: 0 },
 ] as const;
