@@ -2,7 +2,7 @@ import { hapticsEnabledAtom, themeAtom } from "@/store/atoms";
 import { triggerLightHaptic } from "@/utils/haptics";
 import { useAtomValue } from "jotai";
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import SettingsIcon from "./icons/SettingsIcon";
 
@@ -87,8 +87,7 @@ export default function BottomControls({
                     },
                   ]}
                 >
-                  {" "}
-                  ·{" "}
+                  ·
                 </Text>
               ) : null}
               <Text
@@ -136,10 +135,16 @@ const styles = StyleSheet.create({
   },
   hint: {
     fontSize: 13,
+    fontFamily: Platform.select({
+      ios: "System",
+      android: "sans-serif",
+      default: "system-ui",
+    }),
     fontWeight: "500",
     textAlign: "center",
   },
   hintDot: {
+    marginHorizontal: 8,
     fontWeight: "400",
   },
   button: {

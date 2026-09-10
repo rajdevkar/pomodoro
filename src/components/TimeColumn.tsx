@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
-const STRIP_RANGE = 4;
+const STRIP_RANGE = 1;
 
 interface TimeColumnProps {
   value: number;
@@ -122,71 +122,76 @@ export default function TimeColumn({
       .filter(({ itemValue }) => itemValue >= min && itemValue <= max);
   }, [baseValue, enabled, max, min]);
 
+  const windowHeight = slotHeight * 3;
+
   return (
     <GestureDetector gesture={gesture}>
-      <View
-        style={[
-          styles.column,
-          {
-            minWidth: Math.max(48, Math.round(columnWidth * 0.55)),
-            height: itemHeight,
-          },
-        ]}
-      >
-        {items.map(({ offset, itemValue }) => {
-          const centerAt = -offset * slotHeight;
-          return (
-            <Animated.Text
-              key={itemValue}
-              numberOfLines={1}
-              pointerEvents="none"
-              style={[
-                styles.digit,
-                {
-                  color,
-                  fontSize,
-                  fontFamily,
-                  height: slotHeight,
-                  top: (itemHeight - slotHeight) / 2,
-                  opacity: enabled
-                    ? translateY.interpolate({
-                        inputRange: [
-                          centerAt - slotHeight,
-                          centerAt,
-                          centerAt + slotHeight,
-                        ],
-                        outputRange: [0.22, 1, 0.22],
-                        extrapolate: "clamp",
-                      })
-                    : 1,
-                  transform: [
-                    {
-                      translateY: Animated.add(
-                        translateY,
-                        offset * slotHeight + baselineNudge,
-                      ),
-                    },
-                    {
-                      scale: enabled
-                        ? translateY.interpolate({
-                            inputRange: [
-                              centerAt - slotHeight,
-                              centerAt,
-                              centerAt + slotHeight,
-                            ],
-                            outputRange: [0.34, 1, 0.34],
-                            extrapolate: "clamp",
-                          })
-                        : 1,
-                    },
-                  ],
-                },
-              ]}
-            >
-              {pad2(itemValue)}
-            </Animated.Text>
-          );
-        })}
+      <View style={[styles.column, { width: columnWidth, height: itemHeight }]}>
+        <View
+          pointerEvents="none"
+          style={[
+            styles.window,
+            {
+              height: windowHeight,
+              top: (itemHeight - windowHeight) / 2,
+            },
+          ]}
+        >
+          {items.map(({ offset, itemValue }) => {
+            const centerAt = -offset * slotHeight;
+            return (
+              <Animated.Text
+                key={itemValue}
+                numberOfLines={1}
+                style={[
+                  styles.digit,
+                  {
+                    color,
+                    fontSize,
+                    fontFamily,
+                    width: columnWidth,
+                    height: slotHeight,
+                    top: slotHeight,
+                    opacity: enabled
+                      ? translateY.interpolate({
+                          inputRange: [
+                            centerAt - slotHeight,
+                            centerAt,
+                            centerAt + slotHeight,
+                          ],
+                          outputRange: [0.28, 1, 0.28],
+                          extrapolate: "clamp",
+                        })
+                      : 1,
+                    transform: [
+                      {
+                        translateY: Animated.add(
+                          translateY,
+                          offset * slotHeight + baselineNudge,
+                        ),
+                      },
+                      {
+                        scale: enabled
+                          ? translateY.interpolate({
+                              inputRange: [
+                                centerAt - slotHeight,
+                                centerAt,
+                                centerAt + slotHeight,
+                              ],
+                              outputRange: [0.38, 1, 0.38],
+                              extrapolate: "clamp",
+                            })
+                          : 1,
+                      },
+                    ],
+                  },
+                ]}
+              >
+                {pad2(itemValue)}
+              </Animated.Text>
+            );
+          })}
+        </View>
       </View>
     </GestureDetector>
   );
@@ -197,12 +202,16 @@ const styles = StyleSheet.create({
     overflow: "visible",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 2,
+  },
+  window: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    overflow: "hidden",
   },
   digit: {
     position: "absolute",
     left: 0,
-    right: 0,
     textAlign: "center",
     includeFontPadding: false,
     textAlignVertical: "center",
