@@ -196,30 +196,6 @@ export default function SettingsScreen({ onBack }: SettingsScreenProps) {
         { backgroundColor: isDark ? "#000000" : "#F2F2F7" },
       ]}
     >
-      {/* Soft atmospheric blobs so glass has something to catch */}
-      <View
-        style={[
-          styles.blob,
-          styles.blobTop,
-          {
-            backgroundColor: isDark
-              ? "rgba(10,132,255,0.22)"
-              : "rgba(10,132,255,0.18)",
-          },
-        ]}
-      />
-      <View
-        style={[
-          styles.blob,
-          styles.blobBottom,
-          {
-            backgroundColor: isDark
-              ? "rgba(191,90,242,0.16)"
-              : "rgba(255,55,95,0.12)",
-          },
-        ]}
-      />
-
       <BlurView
         intensity={Platform.OS === "ios" ? 40 : 60}
         tint={isDark ? "dark" : "light"}
@@ -478,21 +454,6 @@ const styles = StyleSheet.create({
   root: {
     ...StyleSheet.absoluteFill,
     zIndex: 100,
-  },
-  blob: {
-    position: "absolute",
-    width: 280,
-    height: 280,
-    borderRadius: 999,
-    opacity: 0.9,
-  },
-  blobTop: {
-    top: -40,
-    right: -60,
-  },
-  blobBottom: {
-    bottom: 80,
-    left: -80,
   },
   navBar: {
     borderBottomWidth: StyleSheet.hairlineWidth,
