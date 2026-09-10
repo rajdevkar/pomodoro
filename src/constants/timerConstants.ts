@@ -2,7 +2,7 @@ export const fontNames = [
   "Space Grotesk",
   "Outfit",
   "Fascinate",
-  "Sixtyfour",
+  "VT323",
   "Orbitron",
 ];
 
@@ -11,9 +11,53 @@ export const fontFamilies = [
   "SpaceGrotesk_700Bold",
   "Outfit_700Bold",
   "Fascinate_400Regular",
-  "Sixtyfour_400Regular",
+  "VT323_400Regular",
   "Orbitron_700Bold",
 ];
+
+/** Per-font digit box. Wide display faces need more width and a smaller size. */
+export const fontMetrics = [
+  { digitWidth: 1.34, rowHeight: 1.2, sizeScale: 1, colonWidth: 0.34 },
+  { digitWidth: 1.34, rowHeight: 1.2, sizeScale: 1, colonWidth: 0.34 },
+  { digitWidth: 1.82, rowHeight: 1.34, sizeScale: 0.8, colonWidth: 0.4 },
+  { digitWidth: 1.42, rowHeight: 1.18, sizeScale: 1.05, colonWidth: 0.32 },
+  { digitWidth: 1.64, rowHeight: 1.22, sizeScale: 0.88, colonWidth: 0.36 },
+] as const;
+
+export function timerLayout(
+  fontIndex: number,
+  viewportWidth: number,
+  viewportHeight: number,
+  fontSizePercent: number,
+) {
+  const metrics = fontMetrics[fontIndex] ?? fontMetrics[0];
+  const base = Math.min(
+    Math.max((fontSizePercent / 100) * viewportHeight * 0.2, 40),
+    viewportWidth * 0.24,
+  );
+  let fontSize = base * metrics.sizeScale;
+  let itemHeight = Math.round(fontSize * metrics.rowHeight);
+  let columnWidth = Math.round(fontSize * metrics.digitWidth);
+  let colonWidth = Math.round(fontSize * metrics.colonWidth);
+  const maxWidth = viewportWidth * 0.82;
+  const rawWidth = columnWidth * 2 + colonWidth + 40;
+
+  if (rawWidth > maxWidth) {
+    const scale = maxWidth / rawWidth;
+    fontSize *= scale;
+    itemHeight = Math.round(itemHeight * scale);
+    columnWidth = Math.round(columnWidth * scale);
+    colonWidth = Math.round(colonWidth * scale);
+  }
+
+  return {
+    fontSize,
+    itemHeight,
+    columnWidth,
+    colonWidth,
+    timeWidth: columnWidth * 2 + colonWidth,
+  };
+}
 
 export const endSoundOptions = [
   { id: "off", label: "Off" },

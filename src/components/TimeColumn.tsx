@@ -37,8 +37,7 @@ export default function TimeColumn({
   const startValueRef = useRef(value);
   const displayValueRef = useRef(value);
   const hideNeighborsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const neighborStride = Math.round(itemHeight * 0.78);
-  const centerLineHeight = Math.round(fontSize * 1.02);
+  const neighborStride = Math.round(itemHeight * 0.82);
 
   useEffect(() => {
     setDisplayValue(value);
@@ -131,7 +130,7 @@ export default function TimeColumn({
       offset,
       itemValue,
       neighborFontSize,
-      top: itemHeight / 2 + offset * neighborStride - neighborFontSize / 2,
+      top: itemHeight / 2 + offset * neighborStride - neighborFontSize * 0.6,
       visible: itemValue >= min && itemValue <= max,
     };
   });
@@ -147,15 +146,14 @@ export default function TimeColumn({
             ({ offset, itemValue, neighborFontSize, top, visible }) => (
               <Text
                 key={offset}
+                numberOfLines={1}
                 style={[
                   styles.digit,
                   styles.neighbor,
                   {
                     top,
-                    width: columnWidth,
                     color,
                     fontSize: neighborFontSize,
-                    lineHeight: neighborFontSize,
                     fontFamily,
                     opacity: visible ? (Math.abs(offset) === 1 ? 0.38 : 0.18) : 0,
                   },
@@ -174,13 +172,15 @@ export default function TimeColumn({
           ]}
         >
           <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.55}
             style={[
               styles.digit,
               {
                 color,
                 fontSize,
                 fontFamily,
-                lineHeight: centerLineHeight,
               },
             ]}
           >
@@ -204,6 +204,7 @@ const styles = StyleSheet.create({
   neighbor: {
     position: "absolute",
     left: 0,
+    right: 0,
   },
   center: {
     width: "100%",
@@ -212,9 +213,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   digit: {
-    width: "100%",
     textAlign: "center",
     includeFontPadding: false,
-    textAlignVertical: "center",
   },
 });

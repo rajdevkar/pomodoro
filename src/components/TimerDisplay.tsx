@@ -1,5 +1,5 @@
 import TimeColumn from "@/components/TimeColumn";
-import { fontFamilies } from "@/constants/timerConstants";
+import { fontFamilies, timerLayout } from "@/constants/timerConstants";
 import {
   fontIndexAtom,
   fontSizePercentAtom,
@@ -33,15 +33,8 @@ export default function TimerDisplay({
   const colonOpacity = useRef(new Animated.Value(1)).current;
 
   const { height, width } = Dimensions.get("window");
-  const fontSize = Math.min(
-    Math.max((fontSizePercent / 100) * height * 0.2, 40),
-    width * 0.24,
-  );
-  const itemHeight = Math.round(fontSize * 1.08);
-  const columnWidth = Math.round(fontSize * 1.36);
-  const colonWidth = Math.round(fontSize * 0.3);
-  const timeWidth = columnWidth * 2 + colonWidth;
-  const colonLineHeight = Math.round(fontSize * 1.02);
+  const { fontSize, itemHeight, columnWidth, colonWidth, timeWidth } =
+    timerLayout(fontIndex, width, height, fontSizePercent);
 
   const isDark = theme === "dark";
   const family = fontFamilies[fontIndex] ?? fontFamilies[0];
@@ -128,13 +121,15 @@ export default function TimerDisplay({
           />
           <View style={[styles.colonSlot, { width: colonWidth, height: itemHeight }]}>
             <Animated.Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.55}
               style={[
                 styles.colon,
                 {
                   color,
                   fontSize,
                   fontFamily: family,
-                  lineHeight: colonLineHeight,
                   opacity: colonOpacity,
                 },
               ]}
