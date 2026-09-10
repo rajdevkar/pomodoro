@@ -3,6 +3,7 @@ import { pad2 } from "@/utils/timeUtils";
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   Animated,
+  Platform,
   StyleSheet,
   View,
   type NativeScrollEvent,
@@ -46,6 +47,7 @@ export default function TimeColumn({
   const listRef = useRef<FlatList<number>>(null);
   const lastIndexRef = useRef(value - min);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const settlingRef = useRef(false);
   const scrollY = useRef(new Animated.Value((value - min) * itemHeight)).current;
   const neighborFade = useRef(new Animated.Value(0)).current;
 
@@ -100,9 +102,10 @@ export default function TimeColumn({
       clearTimeout(hideTimerRef.current);
       hideTimerRef.current = null;
     }
+    settlingRef.current = false;
     Animated.timing(neighborFade, {
       toValue: 1,
-      duration: 120,
+      duration: 90,
       useNativeDriver: true,
     }).start();
   };
@@ -112,11 +115,11 @@ export default function TimeColumn({
     hideTimerRef.current = setTimeout(() => {
       Animated.timing(neighborFade, {
         toValue: 0,
-        duration: 180,
+        duration: 260,
         useNativeDriver: true,
       }).start();
       hideTimerRef.current = null;
-    }, 180);
+    }, 320);
   };
 
   const onScrollTick = (offsetY: number) => {
@@ -130,45 +133,60 @@ export default function TimeColumn({
   };
 
   const commitOffset = (offsetY: number) => {
-    if (!enabled) return;
+    if (!enabled || settlingRef.current) return;
+
     const next = valueFromOffset(offsetY);
     const target = indexForValue(next) * itemHeight;
+    const delta = Math.abs(offsetY - target);
     lastIndexRef.current = indexForValue(next);
+    settlingRef.current = true;
     hideNeighborsSoon();
-    listRef.current?.scrollToOffset({
-      offset: target,
-      animated: true,
-    });
+
+    // Only ease into place when we're meaningfully off-center.
+    if (delta > 1.5) {
+      listRef.current?.scrollToOffset({
+        offset: target,
+        animated: true,
+      });
+    }
+
     if (next !== value) {
       onChange(next);
     }
+
+    setTimeout(() => {
+      settlingRef.current = false;
+    }, 280);
   };
 
   const renderItem = ({ item, index }: { item: number; index: number }) => {
     const center = index * itemHeight;
+    // Wider ranges = softer size / opacity changes while spinning.
     const inputRange = [
-      center - itemHeight,
+      center - itemHeight * 1.35,
+      center - itemHeight * 0.55,
       center,
-      center + itemHeight,
+      center + itemHeight * 0.55,
+      center + itemHeight * 1.35,
     ];
 
     const scale = scrollY.interpolate({
       inputRange,
-      outputRange: [0.68, 1, 0.68],
+      outputRange: [0.58, 0.82, 1, 0.82, 0.58],
       extrapolate: "clamp",
     });
 
     const scrollOpacity = scrollY.interpolate({
       inputRange,
-      outputRange: [0.34, 1, 0.34],
+      outputRange: [0.18, 0.42, 1, 0.42, 0.18],
       extrapolate: "clamp",
     });
 
     const centerWeight = scrollY.interpolate({
       inputRange: [
-        center - itemHeight * 0.5,
+        center - itemHeight * 0.55,
         center,
-        center + itemHeight * 0.5,
+        center + itemHeight * 0.55,
       ],
       outputRange: [0, 1, 0],
       extrapolate: "clamp",
@@ -246,9 +264,12 @@ export default function TimeColumn({
         })}
         scrollEnabled={enabled}
         showsVerticalScrollIndicator={false}
-        decelerationRate={0.993}
+        bounces
+        alwaysBounceVertical
+        overScrollMode="never"
+        decelerationRate={Platform.OS === "ios" ? 0.998 : 0.985}
         nestedScrollEnabled
-        scrollEventThrottle={16}
+        scrollEventThrottle={1}
         onScrollBeginDrag={revealNeighbors}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -263,8 +284,9 @@ export default function TimeColumn({
           commitOffset(event.nativeEvent.contentOffset.y)
         }
         onScrollEndDrag={(event) => {
-          // If the flick still has momentum, wait for onMomentumScrollEnd.
-          if (!event.nativeEvent.velocity || event.nativeEvent.velocity.y === 0) {
+          const velocityY = event.nativeEvent.velocity?.y ?? 0;
+          // Small leftover motion: settle now. Strong flick: let it coast.
+          if (Math.abs(velocityY) < 0.12) {
             commitOffset(event.nativeEvent.contentOffset.y);
           }
         }}
