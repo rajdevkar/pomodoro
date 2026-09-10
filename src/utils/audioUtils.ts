@@ -1,5 +1,5 @@
 import * as FileSystem from "expo-file-system/legacy";
-import { Platform } from "react-native";
+import { NativeModules, Platform } from "react-native";
 
 export type EndSoundId = "off" | "melody" | "chime" | "bell" | "beep";
 export type TickSoundId = "off" | "soft" | "click" | "wood";
@@ -141,8 +141,31 @@ function playWebNotes(notes: Note[]) {
 }
 
 const soundUriCache = new Map<string, string>();
+
+type ExpoAvModule = typeof import("expo-av");
 type NativeSound = import("expo-av").Audio.Sound;
+
+let audioModule: ExpoAvModule | null | undefined;
 let activeSound: NativeSound | null = null;
+
+async function getAudio() {
+  if (Platform.OS === "web") return null;
+  if (audioModule !== undefined) return audioModule;
+
+  // Avoid importing expo-av when the native module is missing — that throws hard.
+  if (!NativeModules.ExponentAV) {
+    audioModule = null;
+    return null;
+  }
+
+  try {
+    audioModule = await import("expo-av");
+  } catch {
+    audioModule = null;
+  }
+
+  return audioModule;
+}
 
 async function ensureSoundFile(
   cacheKey: string,
@@ -164,7 +187,10 @@ async function ensureSoundFile(
 }
 
 async function playNativeNotes(cacheKey: string, notes: Note[]) {
-  const { Audio } = await import("expo-av");
+  const expoAv = await getAudio();
+  if (!expoAv) return;
+
+  const { Audio } = expoAv;
 
   await Audio.setAudioModeAsync({
     playsInSilentModeIOS: true,
@@ -203,8 +229,9 @@ async function playNotes(cacheKey: string, notes: Note[]) {
       return;
     }
     await playNativeNotes(cacheKey, notes);
-  } catch (error) {
-    console.warn("Failed to play sound", error);
+  } catch {
+    // Native audio module missing or playback failed — keep the timer usable.
+    audioModule = null;
   }
 }
 
