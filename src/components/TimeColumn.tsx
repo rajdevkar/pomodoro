@@ -66,9 +66,12 @@ export default function TimeColumn({
     (next: number, animated: boolean) => {
       const index = indexForValue(next);
       lastIndexRef.current = index;
-      scrollY.setValue(index * itemHeight);
+      const offset = index * itemHeight;
+      if (!animated) {
+        scrollY.setValue(offset);
+      }
       listRef.current?.scrollToOffset({
-        offset: index * itemHeight,
+        offset,
         animated,
       });
     },
@@ -76,8 +79,10 @@ export default function TimeColumn({
   );
 
   useEffect(() => {
+    const index = indexForValue(value);
+    if (lastIndexRef.current === index) return;
     scrollToValue(value, false);
-  }, [scrollToValue, value]);
+  }, [indexForValue, scrollToValue, value]);
 
   useEffect(() => {
     return () => {
@@ -127,11 +132,15 @@ export default function TimeColumn({
   const commitOffset = (offsetY: number) => {
     if (!enabled) return;
     const next = valueFromOffset(offsetY);
+    const target = indexForValue(next) * itemHeight;
+    lastIndexRef.current = indexForValue(next);
     hideNeighborsSoon();
+    listRef.current?.scrollToOffset({
+      offset: target,
+      animated: true,
+    });
     if (next !== value) {
       onChange(next);
-    } else {
-      scrollToValue(next, true);
     }
   };
 
@@ -237,10 +246,7 @@ export default function TimeColumn({
         })}
         scrollEnabled={enabled}
         showsVerticalScrollIndicator={false}
-        snapToInterval={itemHeight}
-        snapToAlignment="start"
-        decelerationRate="fast"
-        disableIntervalMomentum
+        decelerationRate={0.993}
         nestedScrollEnabled
         scrollEventThrottle={16}
         onScrollBeginDrag={revealNeighbors}
@@ -257,11 +263,20 @@ export default function TimeColumn({
           commitOffset(event.nativeEvent.contentOffset.y)
         }
         onScrollEndDrag={(event) => {
-          if (event.nativeEvent.velocity?.y === 0) {
+          // If the flick still has momentum, wait for onMomentumScrollEnd.
+          if (!event.nativeEvent.velocity || event.nativeEvent.velocity.y === 0) {
             commitOffset(event.nativeEvent.contentOffset.y);
           }
         }}
-        onLayout={() => scrollToValue(value, false)}
+        onLayout={() => {
+          const index = indexForValue(value);
+          lastIndexRef.current = index;
+          scrollY.setValue(index * itemHeight);
+          listRef.current?.scrollToOffset({
+            offset: index * itemHeight,
+            animated: false,
+          });
+        }}
         contentContainerStyle={{ paddingVertical: itemHeight }}
         style={styles.list}
       />
