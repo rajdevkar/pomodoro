@@ -26,7 +26,6 @@ interface TimeColumnProps {
   fontFamily: string;
   baselineNudge: number;
   color: string;
-  hapticsEnabled: boolean;
   onChange: (value: number) => void;
 }
 
@@ -41,7 +40,6 @@ export default function TimeColumn({
   fontFamily,
   baselineNudge,
   color,
-  hapticsEnabled,
   onChange,
 }: TimeColumnProps) {
   const listRef = useRef<FlatList<number>>(null);
@@ -128,7 +126,7 @@ export default function TimeColumn({
     const index = indexForValue(next);
     if (index !== lastIndexRef.current) {
       lastIndexRef.current = index;
-      if (hapticsEnabled) void triggerSelectionHaptic();
+      void triggerSelectionHaptic();
     }
   };
 

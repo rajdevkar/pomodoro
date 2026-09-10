@@ -1,4 +1,4 @@
-import { hapticsEnabledAtom, themeAtom } from "@/store/atoms";
+import { themeAtom } from "@/store/atoms";
 import { triggerLightHaptic } from "@/utils/haptics";
 import { useAtomValue } from "jotai";
 import React from "react";
@@ -18,13 +18,12 @@ export default function BottomControls({
   isPaused,
 }: BottomControlsProps) {
   const theme = useAtomValue(themeAtom);
-  const hapticsEnabled = useAtomValue(hapticsEnabledAtom);
   const insets = useSafeAreaInsets();
   const isDark = theme === "dark";
   const iconColor = isDark ? "#ffffff" : "#000000";
 
   const openSettings = () => {
-    if (hapticsEnabled) void triggerLightHaptic();
+    void triggerLightHaptic();
     onOpenSettings();
   };
 

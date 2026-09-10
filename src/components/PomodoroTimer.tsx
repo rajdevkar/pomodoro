@@ -6,7 +6,6 @@ import Toast from "@/components/Toast";
 import {
   durationMsAtom,
   endSoundAtom,
-  hapticsEnabledAtom,
   isActiveAtom,
   remainingTimeAtom,
   targetEndTimeAtom,
@@ -18,7 +17,6 @@ import {
   triggerLightHaptic,
   triggerMediumHaptic,
   triggerSuccessHaptic,
-  setHapticsAllowed,
 } from "@/utils/haptics";
 import {
   requestNotificationPermissions,
@@ -35,7 +33,6 @@ export default function PomodoroTimer() {
   const [isActive, setIsActive] = useAtom(isActiveAtom);
   const [targetEndTime, setTargetEndTime] = useAtom(targetEndTimeAtom);
   const [remainingTime, setRemainingTime] = useAtom(remainingTimeAtom);
-  const hapticsEnabled = useAtomValue(hapticsEnabledAtom);
   const tickingSound = useAtomValue(tickingSoundAtom);
   const endSound = useAtomValue(endSoundAtom);
   const setToastMessage = useSetAtom(toastMessageAtom);
@@ -45,17 +42,13 @@ export default function PomodoroTimer() {
   const completingRef = useRef(false);
   const lastTickSecondRef = useRef<number | null>(null);
 
-  const haptic = useCallback(
-    (intensity: "light" | "medium" = "light") => {
-      if (!hapticsEnabled) return;
-      if (intensity === "medium") {
-        void triggerMediumHaptic();
-      } else {
-        void triggerLightHaptic();
-      }
-    },
-    [hapticsEnabled],
-  );
+  const haptic = useCallback((intensity: "light" | "medium" = "light") => {
+    if (intensity === "medium") {
+      void triggerMediumHaptic();
+    } else {
+      void triggerLightHaptic();
+    }
+  }, []);
 
   const handleTimerComplete = useCallback(async () => {
     if (completingRef.current) return;
@@ -75,23 +68,16 @@ export default function PomodoroTimer() {
 
     await sendTimerFinishedNotification();
     await playEndSound(endSound);
-    if (hapticsEnabled) {
-      await triggerSuccessHaptic();
-    }
+    await triggerSuccessHaptic();
 
     completingRef.current = false;
   }, [
     durationMs,
     endSound,
-    hapticsEnabled,
     setIsActive,
     setRemainingTime,
     setTargetEndTime,
   ]);
-
-  useEffect(() => {
-    setHapticsAllowed(hapticsEnabled);
-  }, [hapticsEnabled]);
 
   useEffect(() => {
     if (isActive && targetEndTime) {

@@ -50,13 +50,6 @@ export const isActiveAtom = atomWithStorage<boolean>(
   storage,
 );
 
-export const hapticsEnabledAtom = atomWithStorage<boolean>(
-  "pomodoro-haptics-enabled",
-  true,
-  storage,
-  { getOnInit: true },
-);
-
 export const tickingSoundAtom = atomWithStorage<TickSoundId>(
   "pomodoro-ticking-sound",
   "off",

@@ -3,13 +3,12 @@ import {
   endSoundAtom,
   fontIndexAtom,
   fontSizePercentAtom,
-  hapticsEnabledAtom,
   themeAtom,
   tickingSoundAtom,
 } from "@/store/atoms";
 import type { EndSoundId, TickSoundId } from "@/utils/audioUtils";
 import { playEndSound, playTickSound } from "@/utils/audioUtils";
-import { setHapticsAllowed, triggerLightHaptic } from "@/utils/haptics";
+import { triggerLightHaptic } from "@/utils/haptics";
 import Slider from "@react-native-community/slider";
 import { useAtom } from "jotai";
 import React, { useEffect } from "react";
@@ -88,7 +87,6 @@ export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps)
   const [theme, setTheme] = useAtom(themeAtom);
   const [fontIndex, setFontIndex] = useAtom(fontIndexAtom);
   const [fontSizePercent, setFontSizePercent] = useAtom(fontSizePercentAtom);
-  const [hapticsEnabled, setHapticsEnabled] = useAtom(hapticsEnabledAtom);
   const [tickingSound, setTickingSound] = useAtom(tickingSoundAtom);
   const [endSound, setEndSound] = useAtom(endSoundAtom);
 
@@ -105,7 +103,7 @@ export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps)
     : "rgba(60,60,67,0.6)";
 
   const withHaptic = (action: () => void) => {
-    if (hapticsEnabled) void triggerLightHaptic();
+    void triggerLightHaptic();
     action();
   };
 
@@ -217,25 +215,6 @@ export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps)
             <Group isDark={isDark}>
               <View style={styles.rowBlock}>
                 <Text style={[styles.rowLabel, { color: labelColor }]}>
-                  Touch feedback
-                </Text>
-                {renderSegment(
-                  [
-                    { id: "on", label: "On" },
-                    { id: "off", label: "Off" },
-                  ] as const,
-                  hapticsEnabled ? "on" : "off",
-                  (id) => {
-                    const next = id === "on";
-                    setHapticsAllowed(next);
-                    setHapticsEnabled(next);
-                    if (next) void triggerLightHaptic();
-                  },
-                )}
-              </View>
-              <RowDivider isDark={isDark} />
-              <View style={styles.rowBlock}>
-                <Text style={[styles.rowLabel, { color: labelColor }]}>
                   Tick sound
                 </Text>
                 {renderSegment(tickSoundOptions, tickingSound, (id) =>
@@ -319,7 +298,7 @@ export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps)
                     setFontSizePercent(Math.round(value))
                   }
                   onSlidingComplete={() => {
-                    if (hapticsEnabled) void triggerLightHaptic();
+                    void triggerLightHaptic();
                   }}
                   minimumTrackTintColor={accent}
                   maximumTrackTintColor={
@@ -377,7 +356,7 @@ export default function SettingsScreen({ isOpen, onClose }: SettingsScreenProps)
             <Group isDark={isDark}>
               <Pressable
                 onPress={() => {
-                  if (hapticsEnabled) void triggerLightHaptic();
+                  void triggerLightHaptic();
                   Linking.openURL("https://buymeacoffee.com/rajdevkar");
                 }}
                 style={({ pressed }) => [

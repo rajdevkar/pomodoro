@@ -7,7 +7,6 @@ import {
 import {
   fontIndexAtom,
   fontSizePercentAtom,
-  hapticsEnabledAtom,
   themeAtom,
 } from "@/store/atoms";
 import { durationFromParts, splitTime } from "@/utils/timeUtils";
@@ -31,7 +30,6 @@ export default function TimerDisplay({
   const theme = useAtomValue(themeAtom);
   const fontIndex = useAtomValue(fontIndexAtom);
   const fontSizePercent = useAtomValue(fontSizePercentAtom);
-  const hapticsEnabled = useAtomValue(hapticsEnabledAtom);
   const colonOpacity = useRef(new Animated.Value(1)).current;
 
   const { height, width } = Dimensions.get("window");
@@ -110,7 +108,6 @@ export default function TimerDisplay({
           fontFamily={family}
           baselineNudge={baselineNudge}
           color={color}
-          hapticsEnabled={hapticsEnabled}
           onChange={(nextMinutes) => applyParts(nextMinutes, seconds)}
         />
 
@@ -127,7 +124,6 @@ export default function TimerDisplay({
           fontFamily={family}
           baselineNudge={baselineNudge}
           color={color}
-          hapticsEnabled={hapticsEnabled}
           onChange={(nextSeconds) => applyParts(minutes, nextSeconds)}
         />
 
