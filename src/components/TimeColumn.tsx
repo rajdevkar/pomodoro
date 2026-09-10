@@ -1,14 +1,18 @@
 import { triggerSelectionHaptic } from "@/utils/haptics";
 import { pad2 } from "@/utils/timeUtils";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import {
+  Animated,
   StyleSheet,
-  Text,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
 import { FlatList } from "react-native-gesture-handler";
+
+const AnimatedFlatList = Animated.createAnimatedComponent(
+  FlatList as unknown as typeof FlatList<number>,
+);
 
 interface TimeColumnProps {
   value: number;
@@ -42,10 +46,8 @@ export default function TimeColumn({
   const listRef = useRef<FlatList<number>>(null);
   const lastIndexRef = useRef(value - min);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [activeIndex, setActiveIndex] = useState(() =>
-    Math.max(0, value - min),
-  );
-  const [showNeighbors, setShowNeighbors] = useState(false);
+  const scrollY = useRef(new Animated.Value((value - min) * itemHeight)).current;
+  const neighborFade = useRef(new Animated.Value(0)).current;
 
   const data = useMemo(() => {
     const items: number[] = [];
@@ -64,13 +66,13 @@ export default function TimeColumn({
     (next: number, animated: boolean) => {
       const index = indexForValue(next);
       lastIndexRef.current = index;
-      setActiveIndex(index);
+      scrollY.setValue(index * itemHeight);
       listRef.current?.scrollToOffset({
         offset: index * itemHeight,
         animated,
       });
     },
-    [indexForValue, itemHeight],
+    [indexForValue, itemHeight, scrollY],
   );
 
   useEffect(() => {
@@ -93,22 +95,29 @@ export default function TimeColumn({
       clearTimeout(hideTimerRef.current);
       hideTimerRef.current = null;
     }
-    setShowNeighbors(true);
+    Animated.timing(neighborFade, {
+      toValue: 1,
+      duration: 120,
+      useNativeDriver: true,
+    }).start();
   };
 
   const hideNeighborsSoon = () => {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     hideTimerRef.current = setTimeout(() => {
-      setShowNeighbors(false);
+      Animated.timing(neighborFade, {
+        toValue: 0,
+        duration: 180,
+        useNativeDriver: true,
+      }).start();
       hideTimerRef.current = null;
-    }, 220);
+    }, 180);
   };
 
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const onScrollTick = (offsetY: number) => {
     if (!enabled) return;
-    const next = valueFromOffset(event.nativeEvent.contentOffset.y);
+    const next = valueFromOffset(offsetY);
     const index = indexForValue(next);
-    setActiveIndex(index);
     if (index !== lastIndexRef.current) {
       lastIndexRef.current = index;
       if (hapticsEnabled) void triggerSelectionHaptic();
@@ -118,7 +127,6 @@ export default function TimeColumn({
   const commitOffset = (offsetY: number) => {
     if (!enabled) return;
     const next = valueFromOffset(offsetY);
-    setActiveIndex(indexForValue(next));
     hideNeighborsSoon();
     if (next !== value) {
       onChange(next);
@@ -128,12 +136,44 @@ export default function TimeColumn({
   };
 
   const renderItem = ({ item, index }: { item: number; index: number }) => {
-    const selected = index === activeIndex;
-    const opacity = selected ? 1 : showNeighbors ? 0.32 : 0;
+    const center = index * itemHeight;
+    const inputRange = [
+      center - itemHeight,
+      center,
+      center + itemHeight,
+    ];
+
+    const scale = scrollY.interpolate({
+      inputRange,
+      outputRange: [0.68, 1, 0.68],
+      extrapolate: "clamp",
+    });
+
+    const scrollOpacity = scrollY.interpolate({
+      inputRange,
+      outputRange: [0.34, 1, 0.34],
+      extrapolate: "clamp",
+    });
+
+    const centerWeight = scrollY.interpolate({
+      inputRange: [
+        center - itemHeight * 0.5,
+        center,
+        center + itemHeight * 0.5,
+      ],
+      outputRange: [0, 1, 0],
+      extrapolate: "clamp",
+    });
+
+    const neighborWeight = Animated.subtract(scrollOpacity, centerWeight);
+    const opacity = Animated.add(
+      centerWeight,
+      Animated.multiply(neighborFade, neighborWeight),
+    );
 
     return (
       <View style={[styles.row, { height: itemHeight, width: columnWidth }]}>
-        <Text
+        <Animated.Text
           numberOfLines={1}
           style={[
             styles.digit,
@@ -143,12 +183,12 @@ export default function TimeColumn({
               fontFamily,
               lineHeight: itemHeight,
               opacity,
-              transform: [{ translateY: baselineNudge }],
+              transform: [{ translateY: baselineNudge }, { scale }],
             },
           ]}
         >
           {pad2(item)}
-        </Text>
+        </Animated.Text>
       </View>
     );
   };
@@ -163,7 +203,7 @@ export default function TimeColumn({
         ]}
       >
         <View style={[styles.row, { height: itemHeight, width: columnWidth }]}>
-          <Text
+          <Animated.Text
             numberOfLines={1}
             style={[
               styles.digit,
@@ -177,7 +217,7 @@ export default function TimeColumn({
             ]}
           >
             {pad2(value)}
-          </Text>
+          </Animated.Text>
         </View>
       </View>
     );
@@ -185,12 +225,11 @@ export default function TimeColumn({
 
   return (
     <View style={[styles.column, { width: columnWidth, height: itemHeight * 3 }]}>
-      <FlatList
+      <AnimatedFlatList
         ref={listRef}
         data={data}
         keyExtractor={(item) => String(item)}
         renderItem={renderItem}
-        extraData={{ activeIndex, showNeighbors }}
         getItemLayout={(_, index) => ({
           length: itemHeight,
           offset: itemHeight * index,
@@ -205,7 +244,15 @@ export default function TimeColumn({
         nestedScrollEnabled
         scrollEventThrottle={16}
         onScrollBeginDrag={revealNeighbors}
-        onScroll={handleScroll}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          {
+            useNativeDriver: true,
+            listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+              onScrollTick(event.nativeEvent.contentOffset.y);
+            },
+          },
+        )}
         onMomentumScrollEnd={(event) =>
           commitOffset(event.nativeEvent.contentOffset.y)
         }
